@@ -1,0 +1,16 @@
+[
+	{
+		"url":"http:\/\/latex.codecogs.com",
+		"options_url":"\/gif.latex?#latex#",
+		"type":"HTTP-GET",
+		"format":"GIF",
+		"path":""
+	},
+	{
+		"url":"http:\/\/www.sciweavers.org",
+		"options_url":"\/tex2img.php?eq=#latex#&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0",
+		"type":"HTTP-GET",
+		"format":"GIF",
+		"path":""
+	}
+]

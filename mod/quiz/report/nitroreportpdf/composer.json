@@ -1,0 +1,21 @@
+{
+    "name": "nitro/nitroreportpdf",
+    "description": "Module for Moodle generate PDF and XLS files from quiz",
+    "type": "moodle-module-php",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jaroslaw Maciejewski",
+            "email": "nitro.bystrzyca@gmail.com"
+        }
+    ],
+    "require": {
+        "phpoffice/phpexcel": "1.8.0",
+        "peekmo/jsonpath": "dev-master",
+        "mpdf/mpdf": "dev-master",
+        "zendframework/zendframework": "^2.5",
+        "phpseclib/phpseclib": "^0.3.10",
+        "lcobucci/jwt": "^3.0",
+        "nitro2010/json-rpc": "^2.0"
+    }
+}

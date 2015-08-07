@@ -139,3 +139,16 @@ $string['summary_sort_a_z'] = 'Summary_sort_a-z';
 $string['summary_sort_precents'] = 'Summary_sort_precents';
 $string['short_summary'] = 'Short_summary';
 $string['excel_files'] = 'Excel\'s files';
+
+
+
+
+
+
+
+
+
+
+
+$string['files_are_generated'] = 'Pliki zostały wygenerowane';
+$string['ucandownloadfromprivatearea'] = 'Możesz je pobrać ze swojej przestrzeni prywatnych plików';

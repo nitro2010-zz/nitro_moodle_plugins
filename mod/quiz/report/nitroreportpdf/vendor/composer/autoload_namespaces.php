@@ -7,7 +7,7 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'phpDocumentor' => array($vendorDir . '/phpdocumentor/reflection-docblock/src'),
-    'ZendXml' => array($vendorDir . '/zendframework/zendxml/library'),
+    'ZendXml\\' => array($vendorDir . '/zendframework/zendxml/library'),
     'System' => array($vendorDir . '/phpseclib/phpseclib/phpseclib'),
     'Prophecy\\' => array($vendorDir . '/phpspec/prophecy/src'),
     'Peekmo\\JsonPath' => array($vendorDir . '/peekmo/jsonpath/src'),

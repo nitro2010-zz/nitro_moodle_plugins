@@ -1,4 +1,7 @@
 <?php
+ini_set('max_execution_time', 0);
+ini_set('memory_limit','1024M');
+
 if(!defined('MOODLE_INTERNAL')):
 	die(get_string('not_allows','quiz_nitroreportpdf'));
 endif;
@@ -70,6 +73,7 @@ class quiz_nitroreportpdf_report extends quiz_default_report
 		$WIRIS_URL_IMAGE_SERVICE = $CFG->wwwroot.'/question/type/wq/quizzes/service.php?service=cache&name=';
 		//GENERATE HTML FILE? DEFAULT IS FALSE
 		$generate_html_file=true;
+		$html_contents='';
 		//numbers of parts of the report
 		$PROGRESSBAR_PARTS=8;
 		//get information about quiz, if quiz info is empty - quiz doesn't exists
@@ -190,7 +194,10 @@ $HTML_COVER='
 			';
 $mpdf->AddPage();
 $mpdf->Bookmark('1. '.get_string('cover','quiz_nitroreportpdf'),0);
-$mpdf->WriteHTML($HTML_COVER);			
+$mpdf->WriteHTML($HTML_COVER);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
  /*	========================> 				2. Short info about test	*/
 $this->SetBarWidth(number_format(floor(2*(100/$PROGRESSBAR_PARTS)),2,'.',''));
 @ob_flush();
@@ -219,14 +226,18 @@ if((!empty($info_quiz->timelimit))||($info_quiz->timelimit>0)):
 endif;
 switch($info_quiz->grademethod):
 	case '2':	$grademethod = get_string('avggrade','quiz_nitroreportpdf'); 		break;
-	case '3': 	$grademethod = get_string('firstapproach','quiz_nitroreportpdf'); break;
+	case '3': 	$grademethod = get_string('firstapproach','quiz_nitroreportpdf'); 	break;
 	case '4': 	$grademethod = get_string('lastapproach','quiz_nitroreportpdf'); 	break;
 	default: 	$grademethod = get_string('highgrade','quiz_nitroreportpdf'); 		break;
 endswitch;
 $number_question= $DB->count_records_sql('SELECT count(questionid) FROM {quiz_slots} WHERE quizid="'.$quizid.'"');
 $introtest='----';
-if(!empty($info_quiz->intro)):
-	$introtest=$this->files_from_db_img('mod_quiz','intro',array('extra_sql'=>'AND contextid IN ('.$contexts_array.')'),$info_quiz->intro);	
+if(!empty($info_quiz->intro)):	
+	if($generate_html_file):
+		$introtest=$this->files_from_db_img('mod_quiz','intro',array('extra_sql'=>'AND contextid IN ('.$contexts_array.')'),$info_quiz->intro,true);	
+	else:
+		$introtest=$this->files_from_db_img('mod_quiz','intro',array('extra_sql'=>'AND contextid IN ('.$contexts_array.')'),$info_quiz->intro);	
+	endif;
 endif; //quiz intro if
 $INTROTEST='<div style="text-align: center;font-weight: bold;font-size:14pt;text-transform:uppercase;">'.get_string('short_info_about_test','quiz_nitroreportpdf').'</div>
 			<br /><br />
@@ -283,6 +294,9 @@ $INTROTEST='<div style="text-align: center;font-weight: bold;font-size:14pt;text
 $mpdf->AddPage();
 $mpdf->Bookmark('2. '.get_string('short_info_about_test','quiz_nitroreportpdf'),0);
 $mpdf->WriteHTML($INTROTEST);
+if($generate_html_file):
+	$html_contents.=$INTROTEST;
+endif;
  /*	========================> 				3. Correct filled test 				*/
 $this->SetBarWidth(number_format(floor(3*(100/$PROGRESSBAR_PARTS)),2,'.',''));
 @ob_flush();
@@ -291,6 +305,9 @@ $mpdf->AddPage();
 $mpdf->Bookmark('3. '.get_string('correctfilltest','quiz_nitroreportpdf'),0);	
 $CORRECT_FILLED_TEST_INTRO='<p style="text-align: center;font-weight: bold;font-size:14pt;text-transform:uppercase;">'.get_string('questionandanswer','quiz_nitroreportpdf').'</p><p></p>';		
 $mpdf->WriteHTML($CORRECT_FILLED_TEST_INTRO);
+if($generate_html_file):
+	$html_contents.=$CORRECT_FILLED_TEST_INTRO;
+endif;
 //get questions from quiz
 $questions = $DB->get_records_sql('SELECT qs.id AS id,qs.maxmark AS q_grade,q.questiontext AS q_text,q.qtype AS q_type,qs.questionid AS q_idq FROM {quiz_slots} qs,{question} q WHERE qs.quizid='.$quizid.' AND qs.questionid=q.id AND q.parent=0 ORDER BY qs.questionid ASC');
 $tab_correct_answers=array();
@@ -320,6 +337,9 @@ foreach($questions AS $q):
 			endif;
 			$NREQ='<table border="0" style="width:100%;"><tr><td><b>'.$nr_question.'.</b></td><td style="text-align:right;">'.get_string('pluginname','qtype_truefalse').' ('.number_format($q->q_grade,$questiondecimalpoints,".","").' '.get_string('points_short','quiz_nitroreportpdf').')</td></tr></table><br />'.$q_text.'<br /><u>'.get_string('answer','quiz_nitroreportpdf').':</u> <span style="color:blue;font-weight: bold;">'.(($truefalse==0) ? $tf_sql_false->answer : $tf_sql_true->answer).'</span>';
 			$mpdf->WriteHTML($NREQ);
+			if($generate_html_file):
+				$html_contents.=$NREQ;
+			endif;
 			$tab_quiz[$q->q_idq]['answers'][]=$truefalse;
 			$tab_quiz[$q->q_idq]['points'][]=number_format($q->q_grade,$questiondecimalpoints,".","");
 		break;
@@ -421,9 +441,15 @@ foreach($questions AS $q):
 			array_multisort($u_type, SORT_DESC, $u_pkt, SORT_DESC, $u_answer, SORT_STRING,SORT_ASC, $tab_correct);
 			$NREQ='<table border="0" style="width:100%;"><tr><td><b>'.$nr_question.'.</b></td><td style="text-align: right;">'.get_string('pluginname','qtype_numerical').' ('.number_format($q->q_grade,$questiondecimalpoints,".","").' '.get_string('points_short','quiz_nitroreportpdf').')</td></tr></table><br />'.$q_text.'<br /><u>'.get_string('answers','quiz_nitroreportpdf').':</u><br /><br /><table border="0" style="margin-left: 0%; margin-right: 0%;" class="table"><tr><th style="text-transform:capitalize;">'.get_string('points_short','quiz_nitroreportpdf').'.</th><th>'.get_string('answer','quiz_nitroreportpdf').'</th></tr>';
 			$mpdf->WriteHTML($NREQ);
+			if($generate_html_file):
+				$html_contents.=$NREQ;
+			endif;			
 			for($i=0;$i<count($tab_correct);$i++):
 				$NREQ='<tr><td style="text-align: center;">'.$tab_correct[$i]['pkt'].'</td><td>'.$tab_correct[$i]['answer'].'</td></tr>';
 				$mpdf->WriteHTML($NREQ);
+				if($generate_html_file):
+					$html_contents.=$NREQ;
+				endif;				
 			endfor;
 			$answer2='';
 			$l=1;
@@ -453,6 +479,9 @@ foreach($questions AS $q):
 			endif;
 			$NREQ='</table><br /><u>'.get_string('othersprops','quiz_nitroreportpdf').':</u> <br />'.$answer2;
 			$mpdf->WriteHTML($NREQ);
+			if($generate_html_file):
+				$html_contents.=$NREQ;
+			endif;
 		break;
 
 		case 'gapselect':
@@ -469,6 +498,9 @@ foreach($questions AS $q):
 			endfor;
 			$NREQ='<table border="0" style="width:100%;"><tr><td><b>'.$nr_question.'.</b></td><td style="text-align:right;">'.get_string('pluginname','qtype_gapselect').' ('.number_format($q->q_grade,$questiondecimalpoints,".","").' '.get_string('points_short','quiz_nitroreportpdf').')</td></tr></table><br />'.$q_text;
 			$mpdf->WriteHTML($NREQ);
+			if($generate_html_file):
+				$html_contents.=$NREQ;
+			endif;
 			$tab_quiz[$q->q_idq]['points'][]=number_format($q->q_grade,$questiondecimalpoints,".","");
 		break;
 		
@@ -549,6 +581,9 @@ foreach($questions AS $q):
 			curl_close($ch);
 			$NREQ='<table border="0" style="width:100%;"><tr><td><b>'.$nr_question.'.</b></td><td style="text-align:right;">'.get_string('pluginname','qtype_ddimageortext').' ('.number_format($q->q_grade,$questiondecimalpoints,".","").' '.get_string('points_short','quiz_nitroreportpdf').')</td></tr></table><br />'.$q_text.'<br /><img src="report/nitroreportpdf/cache/'.$data['filename'].'" />';
 			$mpdf->WriteHTML($NREQ);
+			if($generate_html_file):
+				$html_contents.=$NREQ;
+			endif;
 			$tab_quiz[$q->q_idq]['points'][]=number_format($q->q_grade,$questiondecimalpoints,".","");
 		break;
 
@@ -595,6 +630,9 @@ foreach($questions AS $q):
 			endif;
 			$NREQ='<table border="0" style="width:100%;"><tr><td><b>'.$nr_question.'.</b></td><td style="text-align:right;">'.get_string('pluginname','qtype_multianswer').' ('.$tab_quiz[$q->q_idq]['points'][0].' '.get_string('points_short','quiz_nitroreportpdf').')</td></tr></table><br />'.$q_text;
 			$mpdf->WriteHTML($NREQ);
+			if($generate_html_file):
+				$html_contents.=$NREQ;
+			endif;
 		break;
 
 		case 'ddwtos':
@@ -607,6 +645,9 @@ foreach($questions AS $q):
 			endforeach;
 			$NREQ='<table border="0" style="width:100%;"><tr><td><b>'.$nr_question.'.</b></td><td style="text-align:right;">'.get_string('pluginname','qtype_ddwtos').' ('.number_format($q->q_grade,$questiondecimalpoints,".","").' '.get_string('points_short','quiz_nitroreportpdf').')</td></tr></table><br />'.$q_text;
 			$mpdf->WriteHTML($NREQ);
+			if($generate_html_file):
+				$html_contents.=$NREQ;
+			endif;
 			$tab_quiz[$q->q_idq]['points'][]=number_format($q->q_grade,$questiondecimalpoints,".","");
 		break;
 
@@ -621,6 +662,9 @@ foreach($questions AS $q):
 			endforeach;  //if are some file to process
 			$NREQ='<table border="0" style="width:100%;"><tr><td><b>'.$nr_question.'.</b></td><td style="text-align:right;">'.get_string('pluginname','qtype_match').' ('.number_format($q->q_grade,$questiondecimalpoints,".","").' '.get_string('points_short','quiz_nitroreportpdf').')</td></tr></table><br />'.$q_text.'<br /><u>'.get_string('answers','quiz_nitroreportpdf').':</u><br /><br /><table border="1"><tr><th>'.get_string('question2','quiz_nitroreportpdf').'</th><th>'.get_string('answer','quiz_nitroreportpdf').'</th></tr>'.$answers_tab.'</table>';
 			$mpdf->WriteHTML($NREQ);
+			if($generate_html_file):
+				$html_contents.=$NREQ;
+			endif;
 			$tab_quiz[$q->q_idq]['points'][]=number_format($q->q_grade,$questiondecimalpoints,".","");
 		break;
 
@@ -635,6 +679,9 @@ foreach($questions AS $q):
 			endif;
 			$NREQ='<table border="0" style="width: 100%;"><tr><td><b>'.$nr_question.'.</b></td><td style="text-align: right;">'.$type_q.' ('.number_format($q->q_grade,$questiondecimalpoints,".","").' '.get_string('points_short','quiz_nitroreportpdf').')</td></tr></table><br />'.$q_text.'<br /><u>'.get_string('answers','quiz_nitroreportpdf').':</u> <br /><br />';
 			$mpdf->WriteHTML($NREQ);
+			if($generate_html_file):
+				$html_contents.=$NREQ;
+			endif;
 			$nr_answer=1;
 			foreach($answers_db AS $answer):
 				$answer_txt=$this->files_from_db_img('question','answer',array('extra_sql'=>' AND itemid="'.$answer->id.'" AND contextid IN ('.$contexts_array.')'),$answer->answer);
@@ -650,6 +697,9 @@ foreach($questions AS $q):
 				endif;
 				$NREQ=$corr.'<b>'.$nr_answer.'.</b> '.$answer_txt;
 				$mpdf->WriteHTML($NREQ);
+				if($generate_html_file):
+					$html_contents.=$NREQ;
+				endif;
 				$tab_quiz[$q->q_idq]['answers'][$answer->id]=$answer_txt;
 				$nr_answer++;
 			endforeach;
@@ -667,7 +717,10 @@ foreach($questions AS $q):
 				$answers_tab.='<tr><td>'.$question.'</td><td>'.$answer.'</td></tr>';
 			endforeach;
 			$NREQ='<table border="0" style="width:100%;"><tr><td><b>'.$nr_question.'.</b></td><td style="text-align:right;">'.get_string('pluginname','qtype_ddmatch').' ('.number_format($q->q_grade,$questiondecimalpoints,".","").' '.get_string('points_short','quiz_nitroreportpdf').')</td></tr></table><br />'.$q_text.'<br /><u>'.get_string('answers','quiz_nitroreportpdf').':</u><br /><br /><table border="1" style="margin-left: auto; margin-right: auto;"><tr><th>'.get_string('question2','quiz_nitroreportpdf').'</th><th>'.get_string('answer','quiz_nitroreportpdf').'</th></tr>'.$answers_tab.'</table>';
-			$mpdf->WriteHTML($NREQ);	
+			$mpdf->WriteHTML($NREQ);
+			if($generate_html_file):
+				$html_contents.=$NREQ;
+			endif;
 		break;
 		
 		case 'ordering':		
@@ -679,7 +732,7 @@ foreach($questions AS $q):
 				$tab_quiz[$q->q_idq]['answers'][$ordering_answers->id]=$ordering_answers->answer;
 				$tab_quiz[$q->q_idq]['answers_md5'][md5($ordering_answers->answer)]=$ordering_answers->id;
 			endforeach;		
-			$q_text=substr($q_text,0,-12).'<br><br>Opcje:<br>';
+			$q_text=substr($q_text,0,-12).'<br><br>'.get_string('options','quiz_nitroreportpdf').':<br>';
 			$ordering_options = $DB->get_record_sql('SELECT selecttype,selectcount FROM {qtype_ordering_options} WHERE questionid="'.$q->q_idq.'"');
 			switch($ordering_options->selecttype):
 				case 0:
@@ -694,12 +747,15 @@ foreach($questions AS $q):
 			endswitch;
 			$q_text.='- '.get_string('selectcount','qtype_ordering').': ';
 			if($ordering_options->selectcount == 0):
-				$q_text.='Wszystkie <br>';
+				$q_text.= get_string('all','quiz_nitroreportpdf').' <br>';
 			else:
 				$q_text.=$ordering_options->selectcount.' <br>';
 			endif;
 			$NREQ='<table border="0" style="width:100%;"><tr><td><b>'.$nr_question.'.</b></td><td style="text-align:right;">'.get_string('pluginname','qtype_ordering').' ('.number_format($q->q_grade,$questiondecimalpoints,".","").' '.get_string('points_short','quiz_nitroreportpdf').')</td></tr></table><br />'.$q_text;
 			$mpdf->WriteHTML($NREQ);
+			if($generate_html_file):
+				$html_contents.=$NREQ;
+			endif;
 		break;
 	
 		case 'gapfill':
@@ -717,6 +773,9 @@ foreach($questions AS $q):
 			endfor;
 			$NREQ='<table border="0" style="width:100%;"><tr><td><b>'.$nr_question.'.</b></td><td style="text-align:right;">'.get_string('pluginname','qtype_gapfill').' ('.number_format($q->q_grade,$questiondecimalpoints,".","").' '.get_string('points_short','quiz_nitroreportpdf').')</td></tr></table><br />'.$q_text;
 			$mpdf->WriteHTML($NREQ);
+			if($generate_html_file):
+				$html_contents.=$NREQ;
+			endif;
 		break;
 
 // WIRIS QUESTIONS *** WIRIS QUESTIONS *** WIRIS QUESTIONS
@@ -736,6 +795,9 @@ foreach($questions AS $q):
 			endif;
 			$NREQ='<table border="0" style="width:100%;"><tr><td><b>'.$nr_question.'.</b></td><td style="text-align:right;">WIRIS - '.get_string('pluginname','qtype_truefalsewiris').' ('.number_format($q->q_grade,$questiondecimalpoints,".","").' '.get_string('points_short','quiz_nitroreportpdf').')</td></tr></table><br />'.$q_text.'<br /><u>'.get_string('answer','quiz_nitroreportpdf').':</u> <span style="color:blue;font-weight: bold;">'.(($truefalse==0) ? $tf_sql_false->answer : $tf_sql_true->answer).'</span>';
 			$mpdf->WriteHTML($NREQ);
+			if($generate_html_file):
+				$html_contents.=$NREQ;
+			endif;
 			$tab_quiz[$q->q_idq]['answers'][]=$truefalse;
 			$tab_quiz[$q->q_idq]['points'][]=number_format($q->q_grade,$questiondecimalpoints,".","");
 		break;	
@@ -751,6 +813,9 @@ foreach($questions AS $q):
 			endforeach;  //if are some file to process
 			$NREQ='<table border="0" style="width:100%;"><tr><td><b>'.$nr_question.'.</b></td><td style="text-align:right;">WIRIS - '.get_string('pluginname','qtype_match').' ('.number_format($q->q_grade,$questiondecimalpoints,".","").' '.get_string('points_short','quiz_nitroreportpdf').')</td></tr></table><br />'.$q_text.'<br /><u>'.get_string('answers','quiz_nitroreportpdf').':</u><br /><br /><table border="1"><tr><th>'.get_string('question2','quiz_nitroreportpdf').'</th><th>'.get_string('answer','quiz_nitroreportpdf').'</th></tr>'.$answers_tab.'</table>';
 			$mpdf->WriteHTML($NREQ);
+			if($generate_html_file):
+				$html_contents.=$NREQ;
+			endif;
 			$tab_quiz[$q->q_idq]['points'][]=number_format($q->q_grade,$questiondecimalpoints,".","");
 		break;		
 		
@@ -798,6 +863,9 @@ foreach($questions AS $q):
 			endif;
 			$NREQ='<table border="0" style="width:100%;"><tr><td><b>'.$nr_question.'.</b></td><td style="text-align:right;">WIRIS - '.get_string('pluginname','qtype_multianswerwiris').' ('.$tab_quiz[$q->q_idq]['points'][0].' '.get_string('points_short','quiz_nitroreportpdf').')</td></tr></table><br />'.$q_text;
 			$mpdf->WriteHTML($NREQ);
+			if($generate_html_file):
+				$html_contents.=$NREQ;
+			endif;
 		break;	
 
 		case 'multichoicewiris':
@@ -811,6 +879,9 @@ foreach($questions AS $q):
 			endif;
 			$NREQ='<table border="0" style="width: 100%;"><tr><td><b>'.$nr_question.'.</b></td><td style="text-align: right;">WIRIS - '.$type_q.' ('.number_format($q->q_grade,$questiondecimalpoints,".","").' '.get_string('points_short','quiz_nitroreportpdf').')</td></tr></table><br />'.$q_text.'<br /><u>'.get_string('answers','quiz_nitroreportpdf').':</u> <br /><br />';
 			$mpdf->WriteHTML($NREQ);
+			if($generate_html_file):
+				$html_contents.=$NREQ;
+			endif;
 			$nr_answer=1;
 			foreach($answers_db AS $answer):
 				$answer_txt=$this->files_from_db_img('question','answer',array('extra_sql'=>' AND itemid="'.$answer->id.'" AND contextid IN ('.$contexts_array.')'),$answer->answer);
@@ -826,6 +897,9 @@ foreach($questions AS $q):
 				endif;
 				$NREQ=$corr.'<b>'.$nr_answer.'.</b> '.$answer_txt;
 				$mpdf->WriteHTML($NREQ);
+				if($generate_html_file):
+					$html_contents.=$NREQ;
+				endif;
 				$tab_quiz[$q->q_idq]['answers'][$answer->id]=$answer_txt;
 				$nr_answer++;
 			endforeach;
@@ -843,6 +917,9 @@ foreach($questions AS $q):
 			$tab_quiz[$q->q_idq]['points'][0]=number_format($q->q_grade,$questiondecimalpoints,".","");
 			$NREQ='<table border="0" style="width:100%;"><tr><td><b>'.$nr_question.'.</b></td><td style="text-align:right;">WIRIS - '.get_string('pluginname','qtype_shortanswerwiris').' ('.$tab_quiz[$q->q_idq]['points'][0].' '.get_string('points_short','quiz_nitroreportpdf').')</td></tr></table><br />'.$q_text;
 			$mpdf->WriteHTML($NREQ);
+			if($generate_html_file):
+				$html_contents.=$NREQ;
+			endif;
 		break;		
 // WIRIS QUESTIONS *** WIRIS QUESTIONS *** WIRIS QUESTIONS
 
@@ -866,6 +943,9 @@ foreach($questions AS $q):
 			$tab_quiz[$q->q_idq]['answers_corr_tab']=$answers_corr_tab;
 			$NREQ='<table border="0" style="width:100%;"><tr><td><b>'.$nr_question.'.</b></td><td style="text-align:right;">'.get_string('pluginname','qtype_multichoiceset').' ('.number_format($q->q_grade,$questiondecimalpoints,".","").' '.get_string('points_short','quiz_nitroreportpdf').')</td></tr></table><br />'.$q_text.'<br /><br />'.$answers_tab.'<br />';
 			$mpdf->WriteHTML($NREQ);
+			if($generate_html_file):
+				$html_contents.=$NREQ;
+			endif;
 			$tab_quiz[$q->q_idq]['points'][]=number_format($q->q_grade,$questiondecimalpoints,".","");
 		break;
 
@@ -898,6 +978,9 @@ foreach($questions AS $q):
 			$tab_quiz[$q->q_idq]['points']=number_format($q->q_grade,$questiondecimalpoints,".","");	
 			$NREQ='<table border="0" style="width:100%;"><tr><td><b>'.$nr_question.'.</b></td><td style="text-align: right;">'.get_string('pluginname','qtype_calculatedsimple').' ('.number_format($q->q_grade,$questiondecimalpoints,".","").' '.get_string('points_short','quiz_nitroreportpdf').')</td></tr></table><br />'.$q_text.'<br />';
 			$mpdf->WriteHTML($NREQ);
+			if($generate_html_file):
+				$html_contents.=$NREQ;
+			endif;
 		break;
 
 		default:	
@@ -908,6 +991,9 @@ foreach($questions AS $q):
 	$NREQ='<hr noshade style="height:2px;color:black;" />';
 	
 	$mpdf->WriteHTML($NREQ);
+	if($generate_html_file):
+		$html_contents.=$NREQ;
+	endif;
 	$nr_question++;
 endforeach; // question while processing
 
@@ -919,6 +1005,9 @@ $mpdf->AddPage();
 $mpdf->Bookmark('4. '.get_string('pointsforquestion','quiz_nitroreportpdf'),0);
 $NREQ='<p style="text-align: center;font-weight: bold;font-size:14pt;text-transform:uppercase;">'.get_string('pointsforquestion','quiz_nitroreportpdf').'</p><p></p>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 for($i=0;$i<count($tab_correct_answers);$i++):
 	if($i % 2 == 1):
 		$attach_style=' class="table_td_highlight"';
@@ -939,6 +1028,9 @@ $NREQ='
 	</tr>
 </table>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 if($GENERATE_EXCEL):
 	$SheetCount=$objPHPExcel->getSheetCount();
 	$objPHPExcel->createSheet(NULL,$SheetCount);
@@ -995,6 +1087,9 @@ $mpdf->AddPage();
 $mpdf->Bookmark('5. '.get_string('evaluation','quiz_nitroreportpdf'),0);
 $NREQ='<p style="text-align: center;font-weight: bold;font-size:14pt;text-transform:uppercase;">'.get_string('evaluation','quiz_nitroreportpdf').'</p>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 $quiz_feedback_corr = $DB->get_record_sql('SELECT id,maxgrade FROM {quiz_feedback} WHERE quizid="'.$quizid.'" ORDER BY id ASC LIMIT 0,1');
 $quiz_feedback = $DB->get_records_sql('SELECT id,feedbacktext,mingrade,maxgrade FROM {quiz_feedback} WHERE quizid="'.$quizid.'" ORDER BY id ASC');
 $quiz_count=count($quiz_feedback);
@@ -1011,6 +1106,9 @@ $i=0;
 if($quiz_count <= 0 ):
 	$NREQ='<p style="text-align: center;">'.get_string('noschemgrade').'</p>';
 	$mpdf->WriteHTML($NREQ);
+	if($generate_html_file):
+		$html_contents.=$NREQ;
+	endif;
 else:
 	foreach($quiz_feedback AS $feedback):
 		$feedback_text = $feedback->feedbacktext;
@@ -1063,6 +1161,9 @@ else:
 		'.$tab_notes_feedback.'
 	</table>';
 	$mpdf->WriteHTML($tab_notes);
+	if($generate_html_file):
+		$html_contents.=$tab_notes;
+	endif;
 endif; // $quiz_count if grades = 0
 if($GENERATE_EXCEL):
 	$SheetCount=$objPHPExcel->getSheetCount();
@@ -1135,6 +1236,9 @@ $mpdf->AddPage();
 $mpdf->Bookmark('6. '.get_string('exam_tests','quiz_nitroreportpdf'),0);
 $NREQ='<p style="text-align: center;font-weight: bold;font-size:14pt;text-transform:uppercase;">'.get_string('exam_tests','quiz_nitroreportpdf').'</p><p></p>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 $tab_users=array();
 /*	5. Get users who filled exam		*/
 $quiz_users = $DB->get_records_sql('SELECT DISTINCT(qa.userid) AS userid  FROM {quiz_attempts} qa,{user} u WHERE qa.quiz="'.$quizid.'" AND userid=u.id AND qa.state="finished" ORDER BY u.lastname ASC, u.firstname ASC, u.username ASC');
@@ -1234,6 +1338,9 @@ foreach($quiz_users AS $users):
 	</table>
 	<br /><br />';
 	$mpdf->WriteHTML($NREQ);
+	if($generate_html_file):
+		$html_contents.=$NREQ;
+	endif;
 	$nb_question=1;
 	foreach($tab_quiz AS $tq):
 		$mpdf->Bookmark('6.1. '.get_string('question_upper','quiz_nitroreportpdf').' '.$nb_question,2);
@@ -1267,6 +1374,9 @@ foreach($quiz_users AS $users):
 					</tr>
 				</table>';
 				$mpdf->WriteHTML($NREQ);
+				if($generate_html_file):
+					$html_contents.=$NREQ;
+				endif;
 			break;
 				
 			case 'numerical':
@@ -1319,6 +1429,9 @@ foreach($quiz_users AS $users):
 					</tr>
 				</table>';
 				$mpdf->WriteHTML($NREQ);
+				if($generate_html_file):
+					$html_contents.=$NREQ;
+				endif;
 			break;
 
 			case 'gapselect':
@@ -1326,7 +1439,7 @@ foreach($quiz_users AS $users):
 				$xxx1 = $DB->get_records_sql('SELECT qas.id AS id FROM {question_attempts} qa, {question_attempt_steps} qas WHERE qa.questionusageid="'.$grademethod_sql->uniqueid.'" AND qa.questionid="'.$tq['qid'].'" AND qas.questionattemptid=qa.id AND qas.sequencenumber IN (0,1) ORDER BY qas.id ASC');
 				$xxx2=array_keys($xxx1);			
 				$xxx_questions=$DB->get_record_sql('SELECT id,value FROM {question_attempt_step_data} WHERE attemptstepid="'.$xxx2[0].'" AND name LIKE "_choiceorder%"');				
-				$xxx_answers_orders=$DB->get_records_sql('SELECT id,value FROM {question_attempt_step_data} WHERE attemptstepid="'.$xxx2[1].'" AND name LIKE "p%" ORDER BY id ASC');				
+				$xxx_answers_orders=$DB->get_records_sql('SELECT id,value FROM {question_attempt_step_data} WHERE attemptstepid="'.$xxx2[1].'" AND name LIKE "p%" ORDER BY id ASC');		
 				$ttab1=null;
 				$ttab1=explode(',',$xxx_questions->value);
 				$question=$tq['question'];	
@@ -1353,7 +1466,7 @@ foreach($quiz_users AS $users):
 					$tab_users[$users->userid]['attempt'][$tq['qid']]=number_format($tq['points'][0]*$selected/count($tq['answers']),$questiondecimalpoints,".","");
 				endif;
 				$NREQ='
-				<table border="0" style="width:100%;"><tr><td><b>'.$nb_question.'.</b></td><td style="text-align:right;">'.get_string('questionttypegapselect','quiz_nitroreportpdf').'</td></tr></table><br />'.$question.'<br /><br />
+				<table border="0" style="width:100%;"><tr><td><b>'.$nb_question.'.</b></td><td style="text-align:right;">'.get_string('pluginname','qtype_gapselect').'</td></tr></table><br />'.$question.'<br /><br />
 				<table style="margin-left: auto; margin-right: auto;" class="table">
 				<tr>
 				<th style="font-size: 10pt;">'.get_string('points_available','quiz_nitroreportpdf').'</th>
@@ -1364,7 +1477,10 @@ foreach($quiz_users AS $users):
 				<td style="text-align: center;font-size: 10pt;">'.$tab_users[$users->userid]['attempt'][$tq['qid']].'</td>
 				</tr>
 				</table>';
-				$mpdf->WriteHTML($NREQ);		
+				$mpdf->WriteHTML($NREQ);
+				if($generate_html_file):
+					$html_contents.=$NREQ;
+				endif;				
 			break;				
 
 			case 'ddimageortext':
@@ -1418,7 +1534,7 @@ foreach($quiz_users AS $users):
 				curl_exec($ch);
 				curl_close($ch);
 				$NREQ='
-				<table border="0" style="width:100%;"><tr><td><b>'.$nb_question.'.</b></td><td style="text-align:right;">'.get_string('questiontypeddimageortext','quiz_nitroreportpdf').'</td></tr></table><br />'.$tq['question'].'<br /><img src="report/nitroreportpdf/cache/'.$data['filename'].'" /><br /><br />
+				<table border="0" style="width:100%;"><tr><td><b>'.$nb_question.'.</b></td><td style="text-align:right;">'.get_string('pluginname','qtype_ddimageortext').'</td></tr></table><br />'.$tq['question'].'<br /><img src="report/nitroreportpdf/cache/'.$data['filename'].'" /><br /><br />
 				<table style="margin-left: auto; margin-right: auto;" class="table">
 				<tr>
 					<th style="font-size: 10pt;">'.get_string('points_available','quiz_nitroreportpdf').'</th>
@@ -1430,6 +1546,9 @@ foreach($quiz_users AS $users):
 				</tr>
 				</table>';
 				$mpdf->WriteHTML($NREQ);
+				if($generate_html_file):
+					$html_contents.=$NREQ;
+				endif;
 			break;
 	
 			case 'multichoice':
@@ -1563,6 +1682,9 @@ foreach($quiz_users AS $users):
 				</tr>
 				</table>';
 				$mpdf->WriteHTML($NREQ);
+				if($generate_html_file):
+					$html_contents.=$NREQ;
+				endif;
 			break;		
 
 			case 'multianswer':	
@@ -1627,7 +1749,7 @@ foreach($quiz_users AS $users):
 				endif;
 				$tab_users[$users->userid]['attempt'][$tq['qid']]=number_format($points,$questiondecimalpoints,".","");
 				$NREQ='
-				<table border="0" style="width:100%;"><tr><td><b>'.$nb_question.'.</b></td><td style="text-align:right;">'.get_string('questiontypemultianswer','quiz_nitroreportpdf').'</td></tr></table><br />'.$question.'<br /><br />
+				<table border="0" style="width:100%;"><tr><td><b>'.$nb_question.'.</b></td><td style="text-align:right;">'.get_string('pluginname','qtype_multianswer').'</td></tr></table><br />'.$question.'<br /><br />
 				<table style="margin-left: auto; margin-right: auto;" class="table">
 					<tr>
 						<th style="font-size: 10pt;">'.get_string('points_available','quiz_nitroreportpdf').'</th>
@@ -1639,6 +1761,9 @@ foreach($quiz_users AS $users):
 					</tr>
 				</table>';	
 				$mpdf->WriteHTML($NREQ);
+				if($generate_html_file):
+					$html_contents.=$NREQ;
+				endif;
 			break;
 
 			case 'ddwtos':
@@ -1688,6 +1813,9 @@ foreach($quiz_users AS $users):
 				</tr>
 				</table>';
 				$mpdf->WriteHTML($NREQ);
+				if($generate_html_file):
+					$html_contents.=$NREQ;
+				endif;
 			break;
 
 			case 'match':
@@ -1748,6 +1876,9 @@ foreach($quiz_users AS $users):
 				</tr>
 				</table>';
 				$mpdf->WriteHTML($NREQ);
+				if($generate_html_file):
+					$html_contents.=$NREQ;
+				endif;
 			break;
 
 			case 'ddmatch':
@@ -1799,7 +1930,10 @@ foreach($quiz_users AS $users):
 				endforeach;
 				$answer.='</table>';
 				$NREQ='<table border="0" style="width:100%;"><tr><td><b>'.$nb_question.'.</b></td><td style="text-align:right;">'.get_string('pluginname','qtype_ddmatch').'</td></tr></table><br />'.$tq['question'].'<br /><br />'.$answer.'<br /><br /><table style="margin-left: auto; margin-right: auto;" class="table"><tr><th style="font-size: 10pt;">'.get_string('points_available','quiz_nitroreportpdf').'</th><th style="font-size: 10pt;">'.get_string('gained_points','quiz_nitroreportpdf').'</th></tr><tr><td style="text-align: center;font-size: 10pt;">'.$tq['points'][0].'</td><td style="text-align: center;font-size: 10pt;">'.$tab_users[$users->userid]['attempt'][$tq['qid']].'</td></tr></table>';
-				$mpdf->WriteHTML($NREQ);	
+				$mpdf->WriteHTML($NREQ);
+				if($generate_html_file):
+					$html_contents.=$NREQ;
+				endif;
 			break;
 
 			case 'ordering':	
@@ -1844,6 +1978,9 @@ foreach($quiz_users AS $users):
 				</tr>
 				</table>';
 				$mpdf->WriteHTML($NREQ);
+				if($generate_html_file):
+					$html_contents.=$NREQ;
+				endif;
 			break;
 			
 			case 'gapfill':			
@@ -1882,7 +2019,10 @@ foreach($quiz_users AS $users):
 				<td style="text-align: center;font-size: 10pt;">'.$tab_users[$users->userid]['attempt'][$tq['qid']].'</td>
 				</tr>
 				</table>';
-				$mpdf->WriteHTML($NREQ);	
+				$mpdf->WriteHTML($NREQ);
+				if($generate_html_file):
+					$html_contents.=$NREQ;
+				endif;				
 			break;
 			
 // WIRIS QUESTIONS *** WIRIS QUESTIONS *** WIRIS QUESTIONS
@@ -1975,6 +2115,9 @@ foreach($quiz_users AS $users):
 					endif;
 				endfor;
 				$mpdf->WriteHTML($NREQ);
+				if($generate_html_file):
+					$html_contents.=$NREQ;
+				endif;
 			break;	
 		
 			case 'matchwiris':		
@@ -2168,6 +2311,9 @@ foreach($quiz_users AS $users):
 					endif;
 				endfor;
 				$mpdf->WriteHTML($NREQ);
+				if($generate_html_file):
+					$html_contents.=$NREQ;
+				endif;
 			break;			
 		
 			case 'multianswerwiris':		
@@ -2397,6 +2543,9 @@ foreach($quiz_users AS $users):
 					endif;
 				endfor;	
 				$mpdf->WriteHTML($NREQ);
+				if($generate_html_file):
+					$html_contents.=$NREQ;
+				endif;
 			break;		
 			
 			case 'multichoicewiris':		
@@ -2625,6 +2774,9 @@ foreach($quiz_users AS $users):
 					endif;
 				endfor;
 				$mpdf->WriteHTML($NREQ);	
+				if($generate_html_file):
+					$html_contents.=$NREQ;
+				endif;
 			break;		
 				
 			case 'shortanswerwiris':
@@ -2724,6 +2876,9 @@ foreach($quiz_users AS $users):
 					endif;
 				endfor;
 				$mpdf->WriteHTML($NREQ);
+				if($generate_html_file):
+					$html_contents.=$NREQ;
+				endif;
 			break;
 // WIRIS QUESTIONS *** WIRIS QUESTIONS *** WIRIS QUESTIONS				
 		
@@ -2770,6 +2925,9 @@ foreach($quiz_users AS $users):
 				</tr>
 				</table>';
 				$mpdf->WriteHTML($NREQ);
+				if($generate_html_file):
+					$html_contents.=$NREQ;
+				endif;
 			break;
 
 			case 'calculatedsimple':
@@ -2808,6 +2966,9 @@ foreach($quiz_users AS $users):
 				</tr>
 				</table>';
 				$mpdf->WriteHTML($NREQ);
+				if($generate_html_file):
+					$html_contents.=$NREQ;
+				endif;
 			break;
 
 			default:			
@@ -2827,11 +2988,17 @@ foreach($quiz_users AS $users):
 		if(($nr_question-1)>$nb_question):
 			$NREQ='<hr noshade style="height:1px;color:black;" />';
 			$mpdf->WriteHTML($NREQ);
+			if($generate_html_file):
+				$html_contents.=$NREQ;
+			endif;
 		endif;
 		$nb_question++;
 	endforeach;
 	$NREQ='<hr noshade style="height:5px;color:black;" />';
 	$mpdf->WriteHTML($NREQ);
+	if($generate_html_file):
+		$html_contents.=$NREQ;
+	endif;
 	$user_i++;
 endforeach;
 ///////////////////////////////////////////////////////////
@@ -2842,6 +3009,9 @@ $mpdf->AddPage();
 $mpdf->Bookmark('7. '.get_string('statisticalanalysis','quiz_nitroreportpdf'),0);
 $NREQ='<p style="text-align: center;font-weight: bold;font-size:14pt;text-transform:uppercase;">'.get_string('statisticalanalysis','quiz_nitroreportpdf').'</p><p></p>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 $tab_points=array();
 $tab_userids=array_keys($tab_users);
 $tab_quizids=array_keys($tab_quiz);
@@ -2869,6 +3039,9 @@ $NREQ='
 	</tr>
 ';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 for($i=0;$i<count($tab_points);$i++):
 	$tab_avg=array_sum($tab_points[$i])/count($tab_points[$i]);
 	if($i % 2 == 1):
@@ -2884,10 +3057,16 @@ for($i=0;$i<count($tab_points);$i++):
 	</tr>
 	';
 	$mpdf->WriteHTML($NREQ);
+	if($generate_html_file):
+		$html_contents.=$NREQ;
+	endif;
 	unset($attach_style);
 endfor;
 $NREQ='</table>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 if($GENERATE_EXCEL):
 	$SheetCount=$objPHPExcel->getSheetCount();
 	$objPHPExcel->createSheet(NULL,$SheetCount);
@@ -2996,67 +3175,129 @@ endfor; // users for
 
 $NREQ='<table border="0" style="overflow:visible" repeat_header="1" class="table">';
 $mpdf->WriteHTML($NREQ);
-
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 $NREQ='<tr><th>'.get_string('on','quiz_nitroreportpdf').'</th>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 for($i=0;$i<count($tab_userids);$i++):
 	$NREQ='<th>'.($i+1).'.</th>';
 	$mpdf->WriteHTML($NREQ);
+	if($generate_html_file):
+		$html_contents.=$NREQ;
+	endif;
 endfor;
 $NREQ='</tr>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 
 $NREQ='<tr><th>'.get_string('surname','quiz_nitroreportpdf').'</th>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
+
 for($i=0;$i<count($tab_userids);$i++):
 	$NREQ='<td>'.$tab_users[$tab_userids[$i]]['surname'].'</td>';
 	$mpdf->WriteHTML($NREQ);
+	if($generate_html_file):
+		$html_contents.=$NREQ;
+	endif;
+
 endfor;
 $NREQ='</tr>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
+
 
 $NREQ='<tr><th>'.get_string('name','quiz_nitroreportpdf').'</th>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 for($i=0;$i<count($tab_userids);$i++):
 	$NREQ='<td class="table_td_highlight">'.$tab_users[$tab_userids[$i]]['name'].'</td>';
 	$mpdf->WriteHTML($NREQ);
+	if($generate_html_file):
+		$html_contents.=$NREQ;
+	endif;
 endfor;
 $NREQ='</tr>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 
 $NREQ='<tr><th>'.get_string('username','quiz_nitroreportpdf').'</th>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 for($i=0;$i<count($tab_userids);$i++):
 	$NREQ='<td>'.$tab_users[$tab_userids[$i]]['username'].'</td>';
 	$mpdf->WriteHTML($NREQ);
+	if($generate_html_file):
+		$html_contents.=$NREQ;
+	endif;
 endfor;
 $NREQ='</tr>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 
 $NREQ='<tr><th>'.get_string('email','quiz_nitroreportpdf').'</th>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 for($i=0;$i<count($tab_userids);$i++):
 	$NREQ='<td class="table_td_highlight">'.$tab_users[$tab_userids[$i]]['email'].'</td>';
 	$mpdf->WriteHTML($NREQ);
+	if($generate_html_file):
+		$html_contents.=$NREQ;
+	endif;
 endfor;
 $NREQ='</tr>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 
 if($_POST['show_question_summary']==1):
 	for($i=0;$i<count($tab_quizids);$i++):
 		$NREQ='<tr>';
 		$mpdf->WriteHTML($NREQ);	
+		if($generate_html_file):
+			$html_contents.=$NREQ;
+		endif;
 		$NREQ='<th>'.get_string('question2','quiz_nitroreportpdf').' '.($i+1).'.</th>';
 		$mpdf->WriteHTML($NREQ);
+		if($generate_html_file):
+			$html_contents.=$NREQ;
+		endif;
 		for($j=0;$j<count($tab_userids);$j++):
 			if($invertcolorstyle):
 				$attach_style=' class="table_td_highlight"';
 			endif;
 			$NREQ='<td'.$attach_style.'>'.$tab_users[$tab_userids[$j]]['attempt'][$tab_quizids[$i]].'</td>';
 			$mpdf->WriteHTML($NREQ);
+			if($generate_html_file):
+				$html_contents.=$NREQ;
+			endif;
 		endfor;
 		$NREQ='</tr>';
 		$mpdf->WriteHTML($NREQ);
+		if($generate_html_file):
+			$html_contents.=$NREQ;
+		endif;
 		$invertcolorstyle=!$invertcolorstyle;
 		unset($attach_style);
 	endfor;
@@ -3064,129 +3305,213 @@ endif;
 
 $NREQ='<tr><th>'.get_string('sum_points2','quiz_nitroreportpdf').'</th>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 for($i=0;$i<count($tab_users);$i++):
 	if($invertcolorstyle):
 		$attach_style=' class="table_td_highlight"';
 	endif;
 	$NREQ='<td'.$attach_style.'>'.$tab_users[$tab_userids[$i]]['sum_points'].'</td>';
 	$mpdf->WriteHTML($NREQ);
+	if($generate_html_file):
+		$html_contents.=$NREQ;
+	endif;
 endfor;
 $NREQ='</tr>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 $invertcolorstyle=!$invertcolorstyle;
 unset($attach_style);
 
 $NREQ='<tr><th>'.get_string('points_precent','quiz_nitroreportpdf').'</th>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 for($i=0;$i<count($tab_users);$i++):
 	if($invertcolorstyle):
 		$attach_style=' class="table_td_highlight"';
 	endif;
 	$NREQ='<td'.$attach_style.'>'.$tab_users[$tab_userids[$i]]['precent'].'</td>';
 	$mpdf->WriteHTML($NREQ);
+	if($generate_html_file):
+		$html_contents.=$NREQ;
+	endif;
 endfor;
 $NREQ='</tr>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 $invertcolorstyle=!$invertcolorstyle;
 unset($attach_style);
 
 $NREQ='<tr><th>'.get_string('points_avg','quiz_nitroreportpdf').'</th>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 for($i=0;$i<count($tab_users);$i++):
 	if($invertcolorstyle):
 		$attach_style=' class="table_td_highlight"';
 	endif;
 	$NREQ='<td'.$attach_style.'>'.$tab_users[$tab_userids[$i]]['avg'].'</td>';
 	$mpdf->WriteHTML($NREQ);
+	if($generate_html_file):
+		$html_contents.=$NREQ;
+	endif;
 endfor;
 $NREQ='</tr>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 $invertcolorstyle=!$invertcolorstyle;
 unset($attach_style);
 
 $NREQ='<tr><th>'.get_string('variance_points','quiz_nitroreportpdf').'</th>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 for($i=0;$i<count($tab_users);$i++):
 	if($invertcolorstyle):
 		$attach_style=' class="table_td_highlight"';
 	endif;
 	$NREQ='<td'.$attach_style.'>'.$tab_users[$tab_userids[$i]]['war'].'</td>';
 	$mpdf->WriteHTML($NREQ);
+	if($generate_html_file):
+		$html_contents.=$NREQ;
+	endif;
 endfor;
 $NREQ='</tr>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 $invertcolorstyle=!$invertcolorstyle;
 unset($attach_style);
 
 $NREQ='<tr><th>'.get_string('standdeviationpoints','quiz_nitroreportpdf').'</th>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 for($i=0;$i<count($tab_users);$i++):
 	if($invertcolorstyle):
 		$attach_style=' class="table_td_highlight"';
 	endif;
 	$NREQ='<td'.$attach_style.'>'.$tab_users[$tab_userids[$i]]['odch'].'</td>';
 	$mpdf->WriteHTML($NREQ);
+	if($generate_html_file):
+		$html_contents.=$NREQ;
+	endif;
 endfor;
 $NREQ='</tr>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 $invertcolorstyle=!$invertcolorstyle;
 unset($attach_style);
 
 $NREQ='<tr><th>'.get_string('min_points','quiz_nitroreportpdf').'</th>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 for($j=0;$j<count($tab_userids);$j++):
 	if($invertcolorstyle):
 		$attach_style=' class="table_td_highlight"';
 	endif;
 	$NREQ='<td'.$attach_style.'>'.min($tab_users[$tab_userids[$j]]['attempt']).'</td>';
 	$mpdf->WriteHTML($NREQ);
+	if($generate_html_file):
+		$html_contents.=$NREQ;
+	endif;
 endfor;
 $NREQ='</tr>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 $invertcolorstyle=!$invertcolorstyle;
 unset($attach_style);
 
 $NREQ='<tr><th>'.get_string('max_points','quiz_nitroreportpdf').'</th>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 for($j=0;$j<count($tab_userids);$j++):
 	if($invertcolorstyle):
 		$attach_style=' class="table_td_highlight"';
 	endif;
 	$NREQ='<td'.$attach_style.'>'.max($tab_users[$tab_userids[$j]]['attempt']).'</td>';
 	$mpdf->WriteHTML($NREQ);
+	if($generate_html_file):
+		$html_contents.=$NREQ;
+	endif;
 endfor;
 $NREQ='</tr>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 $invertcolorstyle=!$invertcolorstyle;
 unset($attach_style);
 
 $NREQ='<tr><th style="text-transform:capitalize;">'.get_string('grade','quiz_nitroreportpdf').'</th>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 for($j=0;$j<count($tab_userids);$j++):
 	if($invertcolorstyle):
 		$attach_style=' class="table_td_highlight"';
 	endif;
 	$NREQ='<td'.$attach_style.'>'.$tab_users[$tab_userids[$j]]['feedback'].'</td>';
 	$mpdf->WriteHTML($NREQ);
+	if($generate_html_file):
+		$html_contents.=$NREQ;
+	endif;
 endfor;
 $NREQ='</tr>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 $invertcolorstyle=!$invertcolorstyle;
 unset($attach_style);
 
 $NREQ='<tr><th>'.get_string('notes','quiz_nitroreportpdf').'</th>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 for($j=0;$j<count($tab_userids);$j++):
 	if($invertcolorstyle):
 		$attach_style=' class="table_td_highlight"';
 	endif;
 	$NREQ='<td'.$attach_style.' style="width:100px;height:50px;">&nbsp;</td>';
 	$mpdf->WriteHTML($NREQ);
+	if($generate_html_file):
+		$html_contents.=$NREQ;
+	endif;
 endfor;
 $NREQ='</tr>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 $NREQ='</table>';
 $mpdf->WriteHTML($NREQ);
+if($generate_html_file):
+	$html_contents.=$NREQ;
+endif;
 $invertcolorstyle=!$invertcolorstyle;
 unset($attach_style);
 if($GENERATE_EXCEL):
@@ -3458,6 +3783,10 @@ if ( (get_config('quiz_nitroreportpdf','declaration') == 'DECLARATION_MUSTBE') |
 	<br /><br />
 	'.get_string('declaration_accessexclude','quiz_nitroreportpdf').'.';
 	$mpdf->WriteHTML($NREQ);
+	if($generate_html_file):
+		$html_contents.=$NREQ;
+	endif;
+	
 endif;
 echo '<script>document.getElementById(\'nitroreportpdf_text\').style.display = \'none\';</script>';
 echo '<script>document.getElementById(\'nitroreportpdf_progress\').style.display = \'none\';</script>';
@@ -3481,7 +3810,7 @@ if($GENERATE_EXCEL):
 	$fs->create_file_from_pathname(array('contextid'=>$context->id,'component'=>'user','filearea'=>'private','itemid'=>0,'filepath'=>'/NRPDF_Reports/','filename'=>$pdffile.'.xlsx','timecreated'=>time(),'timemodified'=>time(),'userid'=>$USER->id), $CFG->dirroot.'/mod/quiz/report/nitroreportpdf/cache/'.$pdffile.'.xlsx');
 	$fs->create_file_from_pathname(array('contextid'=>$context->id,'component'=>'user','filearea'=>'private','itemid'=>0,'filepath'=>'/NRPDF_Reports/','filename'=>$pdffile.'.xls','timecreated'=>time(),'timemodified'=>time(),'userid'=>$USER->id), $CFG->dirroot.'/mod/quiz/report/nitroreportpdf/cache/'.$pdffile.'.xls');	
 endif;
-echo '<br /><br /><br />Pliki zostały wygenerowane! <a href="'.$CFG->wwwroot.'/user/files.php" target="_blank">Możesz je pobrać ze swojej przestrzeni prywatnych plików.</a><br />';
+echo '<br /><br /><br />'.get_string('files_are_generated','quiz_nitroreportpdf').'! <a href="'.$CFG->wwwroot.'/user/files.php" target="_blank">'.get_string('ucandownloadfromprivatearea','quiz_nitroreportpdf').'.</a><br />';
 $tab_quiz_sum=0;
 foreach($tab_quiz AS $id => $ext):
 	$tab_quiz_sum+=max($ext['points']);
@@ -3490,6 +3819,65 @@ $tab_quiz_sum=number_format($tab_quiz_sum,4,'.','');
 if($maxpoints != $tab_quiz_sum):
 	echo '<br /><br /><br /><span style="color:red;\">'.get_string('warning1','quiz_nitroreportpdf').'</span>';	
 endif;
+
+
+
+
+$towrite='
+<meta charset="utf-8">
+
+<script type="text/javascript" src="https://code.jquery.com/jquery-latest.min.js"></script>
+
+<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script src="http://nitro2010.github.io/mathjax/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+<link href="//vjs.zencdn.net/4.12/video-js.css" rel="stylesheet">
+<script src="//vjs.zencdn.net/4.12/video.js"></script>
+<link href="http://nitro2010.github.io/video-js/video-js.css" rel="stylesheet">
+<script src="http://nitro2010.github.io/video-js/video.js"></script>
+
+
+<script type="text/javascript" src="http://nitro2010.github.io/bgp/bpgdec8.js"></script>
+<script type="text/javascript" src="http://nitro2010.github.io/bgp/bpgdec.js"></script>
+<script type="text/javascript" src="http://nitro2010.github.io/bgp/bpgdec8a.js"></script>
+';
+
+
+
+
+$towrite.=$html_contents;
+
+
+
+
+
+
+
+file_put_contents('C:/a.htm',$towrite);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 		endif;
 	}
 //=================================					FUNCTIONS
@@ -3540,11 +3928,14 @@ endif;
 		return $txt;	
 	}
 		
-	protected function files_from_db_img($component,$filearea,$options=array(),$text)
+	protected function files_from_db_img($component,$filearea,$options=array(),$text, $allfiles = false)
 	{
 		global $CFG, $DB;
-		//====================================================================
-		preg_match_all('/<.*src=\"@@PLUGINFILE@@(.*)\".*>/Ui',$text,$found);
+		if($allfiles):
+			preg_match_all('/<.*src=\"@@PLUGINFILE@@(.*)\".*>/Ui',$text,$found);
+		else:
+			preg_match_all('/<img*src=\"@@PLUGINFILE@@(.*)\".*>/Ui',$text,$found);		
+		endif;
 		if(count($found[1])>0):
 			foreach($found[1] AS $file2):
 				$fpath=@rawurldecode(preg_replace('/\\/','/',pathinfo($file2)['dirname']).'/');
@@ -3565,7 +3956,11 @@ endif;
 			endforeach;
 		endif; //if are some file to process
 		//A HREF
-		preg_match_all('/<a.*href=\"@@PLUGINFILE@@(.*)\".*>/Ui',$text,$found);
+		if($allfiles):
+			preg_match_all('/<a.*href=\"@@PLUGINFILE@@(.*)\".*>/Ui',$text,$found);
+		else:
+			preg_match_all('/<a.*href=\"@@PLUGINFILE@@(.*)\.(jpg|png|gif|jpeg|tiff|tif|bmp|ppm|pgm|pbm|pnm|webp|bgp)\".*>/Ui',$text,$found);		
+		endif;	
 		if(count($found[1])>0):
 			foreach($found[1] AS $file2):
 				$fpath=@rawurldecode(preg_replace('/\\/','/',pathinfo($file2)['dirname']).'/');

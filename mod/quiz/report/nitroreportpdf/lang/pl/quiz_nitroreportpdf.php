@@ -2,6 +2,9 @@
 //main
 $string['pluginname'] = 'Quiz Nitro Report PDF';
 $string['reportname'] = 'Quiz Nitro Report PDF';
+$string['nitroreportpdf'] = 'Quiz Nitro Report PDF';
+$string['nitroreportpdffilename'] = 'Quiz Nitro Report PDF';
+$string['nitroreportpdfreport'] = 'Quiz Nitro Report PDF';
 $string['not_allows'] = 'Dostęp do tego skryptu jest zabroniony';
 $string['nocapability'] = 'Brak uprawnień do wygenerowania raportu';
 $string['gradeallquestion'] = 'Oceniaj całe pytanie (domyślnie ocenie podlegają odpowiedzi cząstkowe)';
@@ -17,7 +20,6 @@ $string['protocol_exam'] = 'Protokół z egzaminu';
 $string['of_course'] = 'z kursu';
 $string['page'] = 'Strona';
 $string['gen_npdf'] = 'Wygenerowano przy użyciu modułu NitroReportPDF dla Moodle';
-$string['gen_pleasewait'] = 'Trwa generowanie danych i plików... Proszę czekać...';
 $string['course'] = 'Kurs';
 $string['exam'] = 'Egzamin';
 $string['date'] = 'Data';
@@ -120,40 +122,10 @@ $string['yes'] = 'Tak';
 $string['no'] = 'Nie';
 $string['corrected_question'] = 'Czy poprawne?';
 $string['summary_sort_precents'] = 'Podsumowanie_sort_procenty';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//$string['nitroreportpdf'] = 'Quiz Nitro Report PDF';
-//$string['nitroreportpdffilename'] = 'Quiz Nitro Report PDF';
-//$string['nitroreportpdfreport'] = 'Quiz Nitro Report PDF';
-
+$string['gen_pleasewait'] = 'Trwa generowanie danych i plików... Proszę czekać...';
+$string['generate_zip'] = 'Wygeneruj plik ZIP';
+$string['zip_pack_online'] = 'Paczka online';
+$string['zip_pack_offline'] = 'Paczka offline';
 //settings
 $string['DECLARATION_NOTMUSTBE'] = 'Nie wymuszaj dołączania deklaracji';
 $string['DECLARATION_MUSTBE'] = 'Wymuszaj dołączanie deklaracji';
@@ -162,3 +134,34 @@ $string['declaration_page'] = 'Strona deklaracji:';
 $string['declaration_desc'] = 'Pozwala ustawić czy raport ma dołączać klauzulę o zakazie publikacji pytań i odpowiedzi w Internecie, innych nośnikach elektronicznych lub drukowania.';
 $string['contact'] = 'Kontakt:';
 $string['contact_desc'] = 'Pozwala ustawić kontakt do osoby/firmy utrzymującą tę stronę.';
+$string['in_field'] = 'W polu';
+$string['in_select'] = 'W wyborze';
+$string['field_url'] = 'URL';
+$string['desc_url'] = 'podaj główny adres WWW serwera, nie zapomnij dodać http lub https na początku adresu';
+$string['field_extraoptions'] = 'Dodatkowe opcje';
+$string['desc_extraoptions'] = 'podaj dodatkowe parametry. Słowo kluczowe #magic# zastępuje kod latex, mathml.';
+$string['field_type'] = 'Rodzaj';
+$string['desc_type'] = 'wybierz typ zamiany:<br>
+- <b>latex2image</b> - zamienia składnię laTeX na obraz</span><br>
+- <b>mathml2image</b> - zamienia składnię MathML na obraz</span><br>
+- <b>latex2mathml</b> - zamienia składnię laTeX na MathML</span><br>
+- <b>mathml2latex</b> - zamienia składnię MathML na laTeX</span><br>';
+$string['field_typesender'] = 'Typ wysyłania';
+$string['desc_typesender'] = 'wybierz typ wysyłania:<br>
+- <b>HTTP-GET</b> - wysyła HTTP poprzez metodę GET</span><br>
+- <b>HTTP-POST</b> - wysyła HTTP poprzez metodę POST</span><br>';
+$string['field_format'] = 'Format';
+$string['desc_format'] = 'wybierz typ formatu:<br>
+- <b>JPG</b> - przesyłana z powrotem odpowiedź jest w formacie JPG</span><br>
+- <b>GIF</b> - przesyłana z powrotem odpowiedź jest w formacie GIF<br>
+- <b>PNG</b> - przesyłana z powrotem odpowiedź jest w formacie PNG</span><br>
+- <b>JSON-TEXT</b> - przesyłana z powrotem odpowiedź jest w formacie JSON</span><br>
+- <b>TEXT</b> - przesyłana z powrotem odpowiedź jest w formacie tekstowym</span><br>';
+$string['field_path'] = 'Ścieżka';
+$string['desc_path'] = 'podaj ścieżkę w formacie XPATH (pierwszy znak to kropka ".") do miejsca znalezienia potrzebnej informacji.';
+$string['main_settings'] = 'Główne ustawienia';
+$string['actions'] = 'Akcje';
+$string['delete'] = 'Usuń';
+$string['addnewserver'] = 'Dodaj nowy serwer';
+$string['e_nopermission'] = '';
+$string['e_nopermission'] = 'No permissions to folder cache. Please contact with administrator';

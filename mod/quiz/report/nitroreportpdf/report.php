@@ -20,10 +20,15 @@ class quiz_nitroreportpdf_report extends quiz_default_report
 		endif;
 		$this->print_header_and_tabs($cm, $course, $quiz, 'nitroreportpdf');
 		$context = context_module::instance($cm->id);
+		try {
+			file_put_contents($CFG->dirroot.'/mod/quiz/report/nitroreportpdf/cache/'.'test.test','this is only test');
+		} catch(Exception $ez) {
+			print_error('e_nopermission','quiz_nitroreportpdf');
+		}
 		require_capability('mod/quiz:viewreports', $context);
 		//YOU HAVEN'T REQUIRED PERMISSIONS!
 		if(!has_capability('mod/quiz:viewreports', $context)):
-		echo '<div data-rel="fatalerror" class="box errorbox"><p class="errormessage">'.get_string('nocapability','quiz_nitroreportpdf').'</p></div>';
+			print_error('nocapability','quiz_nitroreportpdf');
 		else:
 			//display form with options
 			echo '<form action="'.($CFG->wwwroot.'/mod/quiz/report.php').'?id='.$cm->id.'&mode=nitroreportpdf" method="post">';
@@ -50,6 +55,16 @@ class quiz_nitroreportpdf_report extends quiz_default_report
 				echo 'checked';
 			endif;
 			echo ' /> '.get_string('generate_excel_files','quiz_nitroreportpdf').'<br />';
+			echo '<input id="generate_zip" type="checkbox" name="generate_zip" value="1"';
+			if((isset($_POST['generate_zip']))&&($_POST['generate_zip']==1)):
+				echo 'checked';
+			endif;
+			echo ' /> '.get_string('generate_zip','quiz_nitroreportpdf').'<br />';
+			echo '<div style="padding-left:30px;"><input id="zip_type" type="radio" name="zip_type" value="online" checked> '.get_string('zip_pack_online','quiz_nitroreportpdf').'<br />';
+			if(file_exists($CFG->dirroot.'/mod/quiz/report/nitroreportpdf/nrpdf_prepack.zip')):
+				echo '<input id="zip_type" type="radio" name="zip_type" value="offline"> '.get_string('zip_pack_offline','quiz_nitroreportpdf');
+			endif;
+			echo '</div><br />';
 			echo '<br /><br /><input id="nitro_submit" type="submit" value="'.(get_string('generate_pdf','quiz_nitroreportpdf')).'" />';
 			echo '</form>';
 			//if form send - send option and render PDF file
@@ -67,6 +82,7 @@ class quiz_nitroreportpdf_report extends quiz_default_report
 	protected function nitro_render_pdf($quizid,$userid,$cm)
 	{
 		global $CFG, $DB, $PAGE, $OUTPUT, $USER, $SESSION, $CM;
+		$PAGE->requires->jquery();
 		//disable SUBMIT button after click on this button
 		echo '<script>document.getElementById("nitro_submit").disabled=true;</script>';
 		//define where is storage WIRIS image
@@ -104,7 +120,7 @@ class quiz_nitroreportpdf_report extends quiz_default_report
 		endif;	
 		//if info quiz is empty, show error
 		if(empty($info_quiz)):
-			echo '<div data-rel="fatalerror" class="box errorbox"><p class="errormessage">'.get_string('quizdoesntexists','quiz_nitroreportpdf').'</p></div>';
+			print_error('quizdoesntexists','quiz_nitroreportpdf');
 		else:
 			//get info about course
 			$info_course=$this->nitro_get_course($info_quiz->course);
@@ -196,7 +212,7 @@ $mpdf->AddPage();
 $mpdf->Bookmark('1. '.get_string('cover','quiz_nitroreportpdf'),0);
 $mpdf->WriteHTML($HTML_COVER);
 if($generate_html_file):
-	$html_contents.=$NREQ;
+	$html_contents.=$NREQ.'<hr noshade>';
 endif;
  /*	========================> 				2. Short info about test	*/
 $this->SetBarWidth(number_format(floor(2*(100/$PROGRESSBAR_PARTS)),2,'.',''));
@@ -295,7 +311,7 @@ $mpdf->AddPage();
 $mpdf->Bookmark('2. '.get_string('short_info_about_test','quiz_nitroreportpdf'),0);
 $mpdf->WriteHTML($INTROTEST);
 if($generate_html_file):
-	$html_contents.=$INTROTEST;
+	$html_contents.=$INTROTEST.'<hr noshade>';
 endif;
  /*	========================> 				3. Correct filled test 				*/
 $this->SetBarWidth(number_format(floor(3*(100/$PROGRESSBAR_PARTS)),2,'.',''));
@@ -306,7 +322,7 @@ $mpdf->Bookmark('3. '.get_string('correctfilltest','quiz_nitroreportpdf'),0);
 $CORRECT_FILLED_TEST_INTRO='<p style="text-align: center;font-weight: bold;font-size:14pt;text-transform:uppercase;">'.get_string('questionandanswer','quiz_nitroreportpdf').'</p><p></p>';		
 $mpdf->WriteHTML($CORRECT_FILLED_TEST_INTRO);
 if($generate_html_file):
-	$html_contents.=$CORRECT_FILLED_TEST_INTRO;
+	$html_contents.=$CORRECT_FILLED_TEST_INTRO.'<hr noshade>';
 endif;
 //get questions from quiz
 $questions = $DB->get_records_sql('SELECT qs.id AS id,qs.maxmark AS q_grade,q.questiontext AS q_text,q.qtype AS q_type,qs.questionid AS q_idq FROM {quiz_slots} qs,{question} q WHERE qs.quizid='.$quizid.' AND qs.questionid=q.id AND q.parent=0 ORDER BY qs.questionid ASC');
@@ -316,7 +332,11 @@ foreach($questions AS $q):
 	$tab_correct_answers[]=number_format($q->q_grade,$questiondecimalpoints,".","");
 	$mpdf->Bookmark($nr_question.'. '.get_string('question2','quiz_nitroreportpdf'),1);
 	/* question text */	
-	$q_text = $this->files_from_db_img('question','questiontext',array('extra_sql'=>' AND itemid="'.$q->q_idq.'"'),$q->q_text);
+	if($generate_html_file):
+		$q_text = $this->files_from_db_img('question','questiontext',array('extra_sql'=>' AND itemid="'.$q->q_idq.'"'),$q->q_text,true);
+	else:
+		$q_text = $this->files_from_db_img('question','questiontext',array('extra_sql'=>' AND itemid="'.$q->q_idq.'"'),$q->q_text);
+	endif;
 	$tab_quiz[$q->q_idq]['qid']=$q->q_idq;
 	$tab_quiz[$q->q_idq]['question']=$q_text;
 	$tab_quiz[$q->q_idq]['type']=$q->q_type;
@@ -655,7 +675,11 @@ foreach($questions AS $q):
 			$match_answers = $DB->get_records_sql('SELECT id,questiontext,answertext FROM {qtype_match_subquestions} WHERE questionid="'.$q->q_idq.'" ORDER BY id ASC');
 			$answers_tab='';
 			foreach($match_answers AS $match_answers):
-				$question=$this->files_from_db_img('qtype_match','subquestion',array('extra_sql'=>' AND itemid="'.$match_answers->id.'" AND contextid IN ('.$contexts_array.')'),$match_answers->questiontext);
+				if($generate_html_file):
+					$question=$this->files_from_db_img('qtype_match','subquestion',array('extra_sql'=>' AND itemid="'.$match_answers->id.'" AND contextid IN ('.$contexts_array.')'),$match_answers->questiontext,true);
+				else:
+					$question=$this->files_from_db_img('qtype_match','subquestion',array('extra_sql'=>' AND itemid="'.$match_answers->id.'" AND contextid IN ('.$contexts_array.')'),$match_answers->questiontext);
+				endif;
 				$answer=$match_answers->answertext;
 				$tab_quiz[$q->q_idq]['answers'][$match_answers->id]=array('question'=>$question,'answer'=>$answer);
 				$answers_tab.='<tr><td>'.$question.'</td><td>'.$answer.'</td></tr>';
@@ -684,7 +708,11 @@ foreach($questions AS $q):
 			endif;
 			$nr_answer=1;
 			foreach($answers_db AS $answer):
-				$answer_txt=$this->files_from_db_img('question','answer',array('extra_sql'=>' AND itemid="'.$answer->id.'" AND contextid IN ('.$contexts_array.')'),$answer->answer);
+				if($generate_html_file):
+					$answer_txt=$this->files_from_db_img('question','answer',array('extra_sql'=>' AND itemid="'.$answer->id.'" AND contextid IN ('.$contexts_array.')'),$answer->answer,true);
+				else:
+					$answer_txt=$this->files_from_db_img('question','answer',array('extra_sql'=>' AND itemid="'.$answer->id.'" AND contextid IN ('.$contexts_array.')'),$answer->answer);
+				endif;
 				$corr='';
 				$tab_quiz[$q->q_idq]['qanswers'][$answer->id]=0;
 				if(($multi_tb->single == 1) && ($answer->fraction>=1)):
@@ -710,8 +738,15 @@ foreach($questions AS $q):
 			$ddmatch_answers = $DB->get_records_sql('SELECT id,questiontext,answertext FROM {qtype_ddmatch_subquestions} WHERE questionid="'.$q->q_idq.'" ORDER BY id ASC');
 			$answers_tab='';
 			foreach($ddmatch_answers AS $ddmatch_answers):
-			$question=$this->files_from_db_img('qtype_ddmatch','subquestion',array('extra_sql'=>' AND itemid="'.$ddmatch_answers->id.'" AND contextid IN ('.$contexts_array.')'),$ddmatch_answers->questiontext);
-				$answer=$this->files_from_db_img('qtype_ddmatch','subanswer',array('extra_sql'=>' AND itemid="'.$ddmatch_answers->id.'" AND contextid IN ('.$contexts_array.')'),$ddmatch_answers->answertext);
+				if($generate_html_file):
+					$answer=$this->files_from_db_img('qtype_ddmatch','subanswer',array('extra_sql'=>' AND itemid="'.$ddmatch_answers->id.'" AND contextid IN ('.$contexts_array.')'),$ddmatch_answers->answertext,true);
+					
+					$question=$this->files_from_db_img('qtype_ddmatch','subquestion',array('extra_sql'=>' AND itemid="'.$ddmatch_answers->id.'" AND contextid IN ('.$contexts_array.')'),$ddmatch_answers->questiontext,true);
+				else:
+					$answer=$this->files_from_db_img('qtype_ddmatch','subanswer',array('extra_sql'=>' AND itemid="'.$ddmatch_answers->id.'" AND contextid IN ('.$contexts_array.')'),$ddmatch_answers->answertext);
+					
+					$question=$this->files_from_db_img('qtype_ddmatch','subquestion',array('extra_sql'=>' AND itemid="'.$ddmatch_answers->id.'" AND contextid IN ('.$contexts_array.')'),$ddmatch_answers->questiontext);
+				endif;
 				$tab_quiz[$q->q_idq]['questions'][$ddmatch_answers->id]=$question;
 				$tab_quiz[$q->q_idq]['answers'][$ddmatch_answers->id]=$answer;
 				$answers_tab.='<tr><td>'.$question.'</td><td>'.$answer.'</td></tr>';
@@ -805,8 +840,12 @@ foreach($questions AS $q):
 		case 'matchwiris':	
 			$match_answers = $DB->get_records_sql('SELECT id,questiontext,answertext FROM {qtype_match_subquestions} WHERE questionid="'.$q->q_idq.'" ORDER BY id ASC');
 			$answers_tab='';
-			foreach($match_answers AS $match_answers):
+			foreach($match_answers AS $match_answers):				
+				if($generate_html_file):
+				$question=$this->files_from_db_img('qtype_match','subquestion',array('extra_sql'=>' AND itemid="'.$match_answers->id.'" AND contextid IN ('.$contexts_array.')'),$match_answers->questiontext,true);
+				else:
 				$question=$this->files_from_db_img('qtype_match','subquestion',array('extra_sql'=>' AND itemid="'.$match_answers->id.'" AND contextid IN ('.$contexts_array.')'),$match_answers->questiontext);
+				endif;
 				$answer=$match_answers->answertext;
 				$tab_quiz[$q->q_idq]['answers'][$match_answers->id]=array('question'=>$question,'answer'=>$answer);
 				$answers_tab.='<tr><td>'.$question.'</td><td>'.$answer.'</td></tr>';
@@ -884,7 +923,11 @@ foreach($questions AS $q):
 			endif;
 			$nr_answer=1;
 			foreach($answers_db AS $answer):
-				$answer_txt=$this->files_from_db_img('question','answer',array('extra_sql'=>' AND itemid="'.$answer->id.'" AND contextid IN ('.$contexts_array.')'),$answer->answer);
+				if($generate_html_file):
+					$answer_txt=$this->files_from_db_img('question','answer',array('extra_sql'=>' AND itemid="'.$answer->id.'" AND contextid IN ('.$contexts_array.')'),$answer->answer,true);
+				else:
+					$answer_txt=$this->files_from_db_img('question','answer',array('extra_sql'=>' AND itemid="'.$answer->id.'" AND contextid IN ('.$contexts_array.')'),$answer->answer);
+				endif;
 				$corr='';
 				$tab_quiz[$q->q_idq]['qanswers'][$answer->id]=0;
 				if(($multi_tb->single == 1) && ($answer->fraction>=1)):
@@ -929,7 +972,11 @@ foreach($questions AS $q):
 			$answers_corr_tab=array();
 			$i=1;
 			foreach($answers AS $answers):
-				$answer=$this->files_from_db_img('question','question',array('extra_sql'=>' AND itemid="'.$answers->id.'" AND contextid IN ('.$contexts_array.')'),$answers->answer);
+				if($generate_html_file):
+					$answer=$this->files_from_db_img('question','question',array('extra_sql'=>' AND itemid="'.$answers->id.'" AND contextid IN ('.$contexts_array.')'),$answers->answer,true);
+				else:
+					$answer=$this->files_from_db_img('question','question',array('extra_sql'=>' AND itemid="'.$answers->id.'" AND contextid IN ('.$contexts_array.')'),$answers->answer);
+				endif;
 				$tab_quiz[$q->q_idq]['answers'][$i-1]=array('answer'=>$answer,'fraction'=>$answers->fraction);
 				$tab_quiz[$q->q_idq]['answers_id'][$answers->id]=$i-1;
 				$answers_tab.='<b>'.$i.'.</b>';
@@ -992,7 +1039,7 @@ foreach($questions AS $q):
 	
 	$mpdf->WriteHTML($NREQ);
 	if($generate_html_file):
-		$html_contents.=$NREQ;
+		$html_contents.=$NREQ.'<hr noshade>';
 	endif;
 	$nr_question++;
 endforeach; // question while processing
@@ -1029,7 +1076,7 @@ $NREQ='
 </table>';
 $mpdf->WriteHTML($NREQ);
 if($generate_html_file):
-	$html_contents.=$NREQ;
+	$html_contents.=$NREQ.'<hr noshade>';;
 endif;
 if($GENERATE_EXCEL):
 	$SheetCount=$objPHPExcel->getSheetCount();
@@ -1125,8 +1172,12 @@ else:
 		if($i==count($quiz_feedback)-1):
 			$tab_notes[$i]['mingrade_precent']=number_format(0,$decimalpoints,".","");
 			$tab_notes[$i]['mingrade_points']=number_format(0,4,".","");
+		endif;	
+		if($generate_html_file):
+			$feedback_text=$this->files_from_db_img('mod_quiz','feedback',array('extra_sql'=>' AND itemid="'.$feedback->id.'" AND contextid IN ('.$contexts_array.')'),$feedback_text,true);
+		else:
+			$feedback_text=$this->files_from_db_img('mod_quiz','feedback',array('extra_sql'=>' AND itemid="'.$feedback->id.'" AND contextid IN ('.$contexts_array.')'),$feedback_text);
 		endif;
-		$feedback_text=$this->files_from_db_img('mod_quiz','feedback',array('extra_sql'=>' AND itemid="'.$feedback->id.'" AND contextid IN ('.$contexts_array.')'),$feedback_text);	
 		$tab_notes[$i]['feedback']=$feedback_text;
 		$i++;
 	endforeach; // foreach feedback
@@ -1162,7 +1213,7 @@ else:
 	</table>';
 	$mpdf->WriteHTML($tab_notes);
 	if($generate_html_file):
-		$html_contents.=$tab_notes;
+		$html_contents.=$tab_notes.'<hr noshade>';;
 	endif;
 endif; // $quiz_count if grades = 0
 if($GENERATE_EXCEL):
@@ -2997,7 +3048,7 @@ foreach($quiz_users AS $users):
 	$NREQ='<hr noshade style="height:5px;color:black;" />';
 	$mpdf->WriteHTML($NREQ);
 	if($generate_html_file):
-		$html_contents.=$NREQ;
+		$html_contents.=$NREQ.'<hr noshade>';;
 	endif;
 	$user_i++;
 endforeach;
@@ -3065,7 +3116,7 @@ endfor;
 $NREQ='</table>';
 $mpdf->WriteHTML($NREQ);
 if($generate_html_file):
-	$html_contents.=$NREQ;
+	$html_contents.=$NREQ.'<hr noshade>';;
 endif;
 if($GENERATE_EXCEL):
 	$SheetCount=$objPHPExcel->getSheetCount();
@@ -3810,6 +3861,142 @@ if($GENERATE_EXCEL):
 	$fs->create_file_from_pathname(array('contextid'=>$context->id,'component'=>'user','filearea'=>'private','itemid'=>0,'filepath'=>'/NRPDF_Reports/','filename'=>$pdffile.'.xlsx','timecreated'=>time(),'timemodified'=>time(),'userid'=>$USER->id), $CFG->dirroot.'/mod/quiz/report/nitroreportpdf/cache/'.$pdffile.'.xlsx');
 	$fs->create_file_from_pathname(array('contextid'=>$context->id,'component'=>'user','filearea'=>'private','itemid'=>0,'filepath'=>'/NRPDF_Reports/','filename'=>$pdffile.'.xls','timecreated'=>time(),'timemodified'=>time(),'userid'=>$USER->id), $CFG->dirroot.'/mod/quiz/report/nitroreportpdf/cache/'.$pdffile.'.xls');	
 endif;
+
+
+/////////////////////////////////////////////////////////
+//GENERATE ZIP
+if($_POST['generate_zip']):
+	$isoffline=false;
+	if($_POST['zip_type'] == "offline"):
+		if(file_exists($CFG->dirroot.'/mod/quiz/report/nitroreportpdf/nrpdf_prepack.zip')):
+			$isoffline=true;
+		endif;
+	endif;
+	$zip = new ZipArchive();
+	$towrite='<meta charset="utf-8">';
+	if(!$isoffline):
+		$towrite.='<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+		<script src="http://nitro2010.github.io/mathjax/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+		<link href="http://vjs.zencdn.net/4.12/video-js.css" rel="stylesheet">
+		<script src="http://vjs.zencdn.net/4.12/video.js"></script>
+		<link href="http://nitro2010.github.io/video-js/video-js.css" rel="stylesheet">
+		<script src="http://nitro2010.github.io/video-js/video.js"></script>
+		<script src="http://nitro2010.github.io/video-js/vjs.youtube.js"></script>
+		<script src="http://nitro2010.github.io/video-js/vjs.vimeo.js"></script>
+		<script src="http://nitro2010.github.io/video-js/vjs.dailymotion.js"></script>
+		<script src="http://nitro2010.github.io/video-js/media.soundcloud.js"></script>
+		<script>
+			videojs.options.flash.swf = "http://nitro2010.github.io/video-js/video-js.swf"
+		</script>
+		<script type="text/javascript" src="http://nitro2010.github.io/bgp/bpgdec8.js"></script>
+		<script type="text/javascript" src="http://nitro2010.github.io/bgp/bpgdec.js"></script>
+		<script type="text/javascript" src="http://nitro2010.github.io/bgp/bpgdec8a.js"></script>';
+		$name=md5(uniqid());
+		$zip->open($CFG->dirroot.'/mod/quiz/report/nitroreportpdf/cache/'.$name.'.zip', ZIPARCHIVE::CREATE);
+	else:
+		$towrite='<script type="text/javascript" src="js/mathjax/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+		<script type="text/javascript" src="js/video-js/video-js.css"></script>
+		<script type="text/javascript" src="js/video-js/video.js"></script>
+		<script type="text/javascript" src="js/video-js/vjs.youtube.js"></script>
+		<script type="text/javascript" src="js/video-js/vjs.vimeo.js"></script>
+		<script type="text/javascript" src="js/video-js/vjs.dailymotion.js"></script>
+		<script type="text/javascript" src="js/video-js/media.soundcloud.js"></script>
+		<script>
+			videojs.options.flash.swf = "js/video-js/video-js.swf"
+		</script>
+		<script type="text/javascript" src="js/bpg/bpgdec8.js"></script>
+		<script type="text/javascript" src="js/bpg/bpgdec.js"></script>
+		<script type="text/javascript" src="js/bpg/bpgdec8a.js"></script>';
+		$name=md5(uniqid());
+		copy($CFG->dirroot.'/mod/quiz/report/nitroreportpdf/nrpdf_prepack.zip',$CFG->dirroot.'/mod/quiz/report/nitroreportpdf/cache/'.$name.'.zip');
+		$zip->open($CFG->dirroot.'/mod/quiz/report/nitroreportpdf/cache/'.$name.'.zip');
+	endif;
+	$towrite.=$html_contents;
+	$zip->addEmptyDir('files');
+
+	$audio[]=array('ext'=>'mp3','type'=>'audio/mp3');
+	$audio[]=array('ext'=>'webm','type'=>'audio/webm');
+	$audio[]=array('ext'=>'ogg','type'=>'audio/ogg');
+	$audio[]=array('ext'=>'wav','type'=>'audio/wave');
+
+	$video[]=array('ext'=>'webm','type'=>'video/webm');
+	$video[]=array('ext'=>'ogg','type'=>'video/ogg');
+	$video[]=array('ext'=>'mp4','type'=>'video/mp4');
+
+	$image=array('png','jpg','gif','bpg');
+
+
+	for($a=0;$a<count($audio);$a++):
+		preg_match_all('/<a.*".*\/mod\/quiz\/report\/nitroreportpdf\/cache\/(.*).'.$audio[$a]['ext'].'".*<\/a>/Ui',$towrite,$found);
+		for($i=0;$i<count($found[0]);$i++):
+			$zip->addFile($CFG->dirroot.'/mod/quiz/report/nitroreportpdf/cache/'.$found[1][$i].'.'.$audio[$a]['ext'],'files/'.pathinfo($found[1][$i])['filename'].'.'.$audio[$a]['ext']);
+			$towrite=str_replace($found[0][$i],'<audio id="'.uniqid().'" class="video-js vjs-default-skin" controls preload="auto" width="640" height="264"> <source src="files/'.pathinfo($found[1][$i])['filename'].'.'.$audio[$a]['ext'].'"  type="'.$audio[$a]['type'].'" /></audio>',$towrite);
+		endfor;
+		preg_match_all('/<.*".*\/mod\/quiz\/report\/nitroreportpdf\/cache\/(.*).'.$audio[$a]['ext'].'".*>/Ui',$towrite,$found);
+		for($i=0;$i<count($found[0]);$i++):
+			$zip->addFile($CFG->dirroot.'/mod/quiz/report/nitroreportpdf/cache/'.$found[1][$i].'.'.$audio[$a]['ext'],'files/'.pathinfo($found[1][$i])['filename'].'.'.$audio[$a]['ext']);
+			$towrite=str_replace($found[0][$i],'<audio id="'.uniqid().'"  class="video-js vjs-default-skin" controls preload="auto" width="640" height="264"> <source src="files/'.pathinfo($found[1][$i])['filename'].'.'.$audio[$a]['ext'].'"  type="'.$audio[$a]['type'].'" /></audio>',$towrite);
+		endfor;
+	endfor;
+
+	for($a=0;$a<count($video);$a++):
+		preg_match_all('/<a.*".*\/mod\/quiz\/report\/nitroreportpdf\/cache\/(.*).'.$video[$a]['ext'].'".*<\/a>/Ui',$towrite,$found);
+		for($i=0;$i<count($found[0]);$i++):
+			$zip->addFile($CFG->dirroot.'/mod/quiz/report/nitroreportpdf/cache/'.$found[1][$i].'.'.$video[$a]['ext'],'files/'.pathinfo($found[1][$i])['filename'].'.'.$video[$a]['ext']);
+			$towrite=str_replace($found[0][$i],'<video id="'.uniqid().'"   class="video-js vjs-default-skin" controls preload="auto" width="320" height="264"> <source src="files/'.pathinfo($found[1][$i])['filename'].'.'.$video[$a]['ext'].'"  type="'.$video[$a]['type'].'" /></video>',$towrite);
+		endfor;
+		preg_match_all('/<.*".*\/mod\/quiz\/report\/nitroreportpdf\/cache\/(.*).'.$video[$a]['ext'].'".*>/Ui',$towrite,$found);
+		for($i=0;$i<count($found[0]);$i++):
+			$zip->addFile($CFG->dirroot.'/mod/quiz/report/nitroreportpdf/cache/'.$found[1][$i].'.'.$video[$a]['ext'],'files/'.pathinfo($found[1][$i])['filename'].'.'.$video[$a]['ext']);
+			$towrite=str_replace($found[0][$i],'<video id="'.uniqid().'"   class="video-js vjs-default-skin" controls preload="auto" width="320" height="264"> <source src="files/'.pathinfo($found[1][$i])['filename'].'.'.$video[$a]['ext'].'"  type="'.$video[$a]['type'].'" /></video>',$towrite);
+		endfor;
+	endfor;
+
+	for($a=0;$a<count($image);$a++):
+		preg_match_all('/<img.*".*\/mod\/quiz\/report\/nitroreportpdf\/cache\/(.*).'.$image[$a].'".*>/Ui',$towrite,$found);
+		for($i=0;$i<count($found[0]);$i++):
+			$zip->addFile($CFG->dirroot.'/mod/quiz/report/nitroreportpdf/cache/'.$found[1][$i].'.'.$image[$a],'files/'.pathinfo($found[1][$i])['filename'].'.'.$image[$a]);
+			$towrite=str_replace($found[0][$i],'<img src="files/'.pathinfo($found[1][$i])['filename'].'.'.$image[$a].'" />',$towrite);
+		endfor;
+	endfor;
+
+	//YT
+	preg_match_all('/<a.*".*(youtu\.be|youtube).*".*<\/a>/Ui',$towrite,$found);
+	for($a=0;$a<count($found);$a++):
+		$f=$found[0][$a];
+		preg_match('/<a.*"(.*)".*<\/a>/Ui',$f,$found2);
+		$towrite=str_replace($found2[0],'<video id="'.uniqid().'" src="" class="video-js vjs-default-skin" controls preload="auto" width="640" height="360" data-setup=\'{ "techOrder": ["youtube"], "src": "'.$found2[1].'" }\'></video>',$towrite);
+	endfor;
+
+	//VIMEO
+	preg_match_all('/<a.*".*(vimeo).*".*<\/a>/Ui',$towrite,$found);
+	for($a=0;$a<count($found);$a++):
+		$f=$found[0][$a];
+		preg_match('/<a.*"(.*)".*<\/a>/Ui',$f,$found2);
+		$towrite=str_replace($found2[0],'<video id="'.uniqid().'" src="" class="video-js vjs-default-skin" controls preload="auto" width="640" height="360" data-setup=\'{ "techOrder": ["vimeo"], "src": "'.$found2[1].'" }\'></video>',$towrite);
+	endfor;
+
+	//dailymotion
+	preg_match_all('/<a.*".*(dailymotion).*".*<\/a>/Ui',$towrite,$found);
+	for($a=0;$a<count($found);$a++):
+		$f=$found[0][$a];
+		preg_match('/<a.*"(.*)".*<\/a>/Ui',$f,$found2);
+		$towrite=str_replace($found2[0],'<video id="'.uniqid().'" src="" class="video-js vjs-default-skin" controls preload="auto" width="640" height="360" data-setup=\'{ "techOrder": ["dailymotion"], "src": "'.$found2[1].'" }\'></video>',$towrite);
+	endfor;
+
+	//soundcloud
+	preg_match_all('/<a.*".*(soundcloud).*".*<\/a>/Ui',$towrite,$found);
+	for($a=0;$a<count($found);$a++):
+		$f=$found[0][$a];
+		preg_match('/<a.*"(.*)".*<\/a>/Ui',$f,$found2);
+		$towrite=str_replace($found2[0],'<video id="'.uniqid().'" src="" class="video-js vjs-default-skin" controls preload="auto" width="640" height="360" data-setup=\'{ "techOrder": ["soundcloud"], "src": "'.$found2[1].'" }\'></video>',$towrite);
+	endfor;
+	//add index.html
+	$zip->addFromString('index.html',$towrite);
+	$zip->close();
+	$fs->create_file_from_pathname(array('contextid'=>$context->id,'component'=>'user','filearea'=>'private','itemid'=>0,'filepath'=>'/NRPDF_Reports/','filename'=>$pdffile.'.zip','timecreated'=>time(),'timemodified'=>time(),'userid'=>$USER->id), $CFG->dirroot.'/mod/quiz/report/nitroreportpdf/cache/'.$name.'.zip');
+endif;
+/////////////////////////////////////////////////////////
 echo '<br /><br /><br />'.get_string('files_are_generated','quiz_nitroreportpdf').'! <a href="'.$CFG->wwwroot.'/user/files.php" target="_blank">'.get_string('ucandownloadfromprivatearea','quiz_nitroreportpdf').'.</a><br />';
 $tab_quiz_sum=0;
 foreach($tab_quiz AS $id => $ext):
@@ -3819,65 +4006,6 @@ $tab_quiz_sum=number_format($tab_quiz_sum,4,'.','');
 if($maxpoints != $tab_quiz_sum):
 	echo '<br /><br /><br /><span style="color:red;\">'.get_string('warning1','quiz_nitroreportpdf').'</span>';	
 endif;
-
-
-
-
-$towrite='
-<meta charset="utf-8">
-
-<script type="text/javascript" src="https://code.jquery.com/jquery-latest.min.js"></script>
-
-<script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-<script src="http://nitro2010.github.io/mathjax/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-
-
-<link href="//vjs.zencdn.net/4.12/video-js.css" rel="stylesheet">
-<script src="//vjs.zencdn.net/4.12/video.js"></script>
-<link href="http://nitro2010.github.io/video-js/video-js.css" rel="stylesheet">
-<script src="http://nitro2010.github.io/video-js/video.js"></script>
-
-
-<script type="text/javascript" src="http://nitro2010.github.io/bgp/bpgdec8.js"></script>
-<script type="text/javascript" src="http://nitro2010.github.io/bgp/bpgdec.js"></script>
-<script type="text/javascript" src="http://nitro2010.github.io/bgp/bpgdec8a.js"></script>
-';
-
-
-
-
-$towrite.=$html_contents;
-
-
-
-
-
-
-
-file_put_contents('C:/a.htm',$towrite);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 		endif;
 	}
 //=================================					FUNCTIONS
@@ -4299,4 +4427,3 @@ file_put_contents('C:/a.htm',$towrite);
 	
 /////
 }
-?>

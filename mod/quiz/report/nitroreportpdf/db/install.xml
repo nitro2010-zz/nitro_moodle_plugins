@@ -1,25 +1,24 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/quiz/report/nitroreportpdf/db" VERSION="20150604" COMMENT="XMLDB file for Moodle mod/quiz/report/nitroreportpdf"
+<XMLDB PATH="mod/quiz/report/nitroreportpdf/db" VERSION="20150817" COMMENT="Storage info for Nitro Modules"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../../../lib/xmldb/xmldb.xsd"
 >
   <TABLES>
-    <TABLE NAME="quiz_nitroreportpdf_latex_db" COMMENT="Storage info about latex servers">
+    <TABLE NAME="quiz_nitroreportpdf_latex_db" COMMENT="storage info about latex servers">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="url" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="options_url" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
-        <FIELD NAME="typesender" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="http-get,http-post,soap,xml-rpc..."/>
-        <FIELD NAME="format" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="json,jpeg.rpc"/>
+        <FIELD NAME="typesender" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="format" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="path" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
-        <FIELD NAME="type" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="latex2mathmml,mathmml2latex,latex2gif,latex2png,latex2jpg,,mathmml2png,,mathmml2jpg,,mathmml2gif"/>
-        <FIELD NAME="download" TYPE="int" LENGTH="20" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="in bytes/s"/>
-        <FIELD NAME="upload" TYPE="int" LENGTH="20" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="in bytes/s"/>
+        <FIELD NAME="type" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="download" TYPE="int" LENGTH="20" NOTNULL="false" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="upload" TYPE="int" LENGTH="20" NOTNULL="false" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="ratio" TYPE="int" LENGTH="20" NOTNULL="false" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="changeme" TYPE="" NOTNULL="false" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
-        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="id" TYPE="primary" FIELDS="id"/>
       </KEYS>
     </TABLE>
   </TABLES>

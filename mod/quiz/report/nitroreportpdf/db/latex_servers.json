@@ -1,16 +1,34 @@
 [
 	{
-		"url":"http:\/\/latex.codecogs.com",
-		"options_url":"\/gif.latex?#latex#",
-		"type":"HTTP-GET",
-		"format":"GIF",
-		"path":""
+		"url"			:	"http:\/\/latex.codecogs.com",
+		"options_url"	:	"gif.latex?#magic#",
+		"typesender"	:	"HTTP-GET",
+		"format"		:	"GIF",
+		"path"			:	"",
+		"type"			:	"latex2image"
 	},
 	{
-		"url":"http:\/\/www.sciweavers.org",
-		"options_url":"\/tex2img.php?eq=#latex#&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0",
-		"type":"HTTP-GET",
-		"format":"GIF",
-		"path":""
-	}
+		"url"			:	"http:\/\/www.sciweavers.org\/tex2img.php",
+		"options_url"	:	"eq=#magic#&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0",
+		"typesender"	:	"HTTP-GET",
+		"format"		:	"PNG",
+		"path"			:	"",
+		"type"			:	"latex2image"
+	},
+	{
+		"url"			:	"http:\/\/www.wiris.net\/demo\/editor\/render.png",
+		"options_url"	:	"mml=#magic#",
+		"typesender"	:	"HTTP-GET",
+		"format"		:	"PNG",
+		"path"			:	"",
+		"type"			:	"mathml2image"
+	},
+	{
+		"url"			:	"http:\/\/www.wiris.com\/\/editor\/demo\/mathml2latex",
+		"options_url"	:	"mml=#magic#",
+		"typesender"	:	"HTTP-POST",
+		"format"		:	"TEXT",
+		"path"			:	"",
+		"type"			:	"mathml2latex"
+	}	
 ]

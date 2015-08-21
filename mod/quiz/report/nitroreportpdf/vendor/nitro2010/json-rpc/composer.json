@@ -1,0 +1,19 @@
+{
+    "name": "nitro2010/json-rpc",
+    "description": "Simple Json-RPC client/server library that just works",
+    "homepage": "https://github.com/nitro2010/JsonRPC",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Frédéric Guillot",
+			"name": "Jarosław Maciejewski"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.0"
+    },
+    "autoload": {
+        "psr-0": {"JsonRPC": "src/"}
+    }
+}

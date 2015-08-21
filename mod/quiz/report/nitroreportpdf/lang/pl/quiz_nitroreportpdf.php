@@ -142,21 +142,21 @@ $string['field_extraoptions'] = 'Dodatkowe opcje';
 $string['desc_extraoptions'] = 'podaj dodatkowe parametry. Słowo kluczowe #magic# zastępuje kod latex, mathml.';
 $string['field_type'] = 'Rodzaj';
 $string['desc_type'] = 'wybierz typ zamiany:<br>
-- <b>latex2image</b> - zamienia składnię laTeX na obraz</span><br>
-- <b>mathml2image</b> - zamienia składnię MathML na obraz</span><br>
-- <b>latex2mathml</b> - zamienia składnię laTeX na MathML</span><br>
-- <b>mathml2latex</b> - zamienia składnię MathML na laTeX</span><br>';
+<span class="nitroreportpdf_span_settings_20">- <b>latex2image</b> - zamienia składnię laTeX na obraz</span><br>
+<span class="nitroreportpdf_span_settings_20">- <b>mathml2image</b> - zamienia składnię MathML na obraz</span><br>
+<span class="nitroreportpdf_span_settings_20">- <b>latex2mathml</b> - zamienia składnię laTeX na MathML</span><br>
+<span class="nitroreportpdf_span_settings_20">- <b>mathml2latex</b> - zamienia składnię MathML na laTeX</span><br>';
 $string['field_typesender'] = 'Typ wysyłania';
 $string['desc_typesender'] = 'wybierz typ wysyłania:<br>
-- <b>HTTP-GET</b> - wysyła HTTP poprzez metodę GET</span><br>
-- <b>HTTP-POST</b> - wysyła HTTP poprzez metodę POST</span><br>';
+<span class="nitroreportpdf_span_settings_20">- <b>HTTP-GET</b> - wysyła HTTP poprzez metodę GET</span><br>
+<span class="nitroreportpdf_span_settings_20">- <b>HTTP-POST</b> - wysyła HTTP poprzez metodę POST</span><br>';
 $string['field_format'] = 'Format';
 $string['desc_format'] = 'wybierz typ formatu:<br>
-- <b>JPG</b> - przesyłana z powrotem odpowiedź jest w formacie JPG</span><br>
-- <b>GIF</b> - przesyłana z powrotem odpowiedź jest w formacie GIF<br>
-- <b>PNG</b> - przesyłana z powrotem odpowiedź jest w formacie PNG</span><br>
-- <b>JSON-TEXT</b> - przesyłana z powrotem odpowiedź jest w formacie JSON</span><br>
-- <b>TEXT</b> - przesyłana z powrotem odpowiedź jest w formacie tekstowym</span><br>';
+<span class="nitroreportpdf_span_settings_20">- <b>JPG</b> - przesyłana z powrotem odpowiedź jest w formacie JPG</span><br>
+<span class="nitroreportpdf_span_settings_20">- <b>GIF</b> - przesyłana z powrotem odpowiedź jest w formacie GIF<br>
+<span class="nitroreportpdf_span_settings_20">- <b>PNG</b> - przesyłana z powrotem odpowiedź jest w formacie PNG</span><br>
+<span class="nitroreportpdf_span_settings_20">- <b>JSON-TEXT</b> - przesyłana z powrotem odpowiedź jest w formacie JSON</span><br>
+<span class="nitroreportpdf_span_settings_20">- <b>TEXT</b> - przesyłana z powrotem odpowiedź jest w formacie tekstowym</span><br>';
 $string['field_path'] = 'Ścieżka';
 $string['desc_path'] = 'podaj ścieżkę w formacie XPATH (pierwszy znak to kropka ".") do miejsca znalezienia potrzebnej informacji.';
 $string['main_settings'] = 'Główne ustawienia';
@@ -165,3 +165,9 @@ $string['delete'] = 'Usuń';
 $string['addnewserver'] = 'Dodaj nowy serwer';
 $string['e_nopermission'] = '';
 $string['e_nopermission'] = 'No permissions to folder cache. Please contact with administrator';
+$string['latex_settings'] = 'Ustawienia LaTEX';
+$string['nochecked'] = 'Nie sprawdzone';
+$string['isnewversion'] = 'Jest nowa wersja! Zaktualizuj!';
+$string['youhavelastver'] = 'Masz najnowszą wersję';
+$string['checkupdate'] = 'Sprawdź aktualizacje';
+$string['checkupdates'] = 'Sprawdzanie aktualizacji';

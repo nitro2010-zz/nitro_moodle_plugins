@@ -11,6 +11,4 @@ function xmldb_quiz_nitroreportpdf_install()
 			$DB->insert_record('quiz_nitroreportpdf_latex_db', $record_add, false);
 		endif;
 	endforeach;
-	@mkdir($CFG->dirroot.'/mod/quiz/report/nitroreportpdf/cache');
-	@chmod($CFG->dirroot.'/mod/quiz/report/nitroreportpdf/cache',0777);
 }

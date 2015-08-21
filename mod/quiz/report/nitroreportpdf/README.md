@@ -1,19 +1,34 @@
-					INFO
-=============================================
+INFO
+=============
 NitroReportPDF is module for Moodle, which allows on generate PDF file, also XLS, XLSX and ZIP files with the data about conducted the quiz.
+Author: Jarosław Maciejewski <nitro.bystrzyca@gmail.com>
 
-					INSTALLATION
-=============================================
+
+INSTALLATION
+=============
 1. Download module ZIP file
 2. Unpack
-3. Copy `nitroreportpdf` folder to [moodle directory] /mod/quiz/report
-4. change permissions recursively for `nitroreportpdf` folder to 0755
-5. change permissions recursively for `nitroreportpdf/cache` to 0777
+3. Copy 'nitroreportpdf' folder to [moodle directory] /mod/quiz/report
+4. change permissions recursively for 'nitroreportpdf' folder to 0755
+5. change permissions recursively for 'nitroreportpdf/cache' to 0777
 6. run in browser WWW your Moodle website and complete installation
-7. fill field `contact` to you, you can fill also extra declaration, which will be on the end of PDF file
+7. fill field 'contact' to you, you can fill also extra declaration, which will be on the end of PDF file
 
-					LICENSE
-=============================================
+
+UPGRADE
+=============
+1. Go to http://yourmoodlesite.com/admin/settings.php?section=modsettingsquizcatnitroreportpdf&action=checkupdate and in section 'Check updates' check whether apppears text 'Is new version! Upgrade!'.
+2. If you see that, download file: https://github.com/nitro2010/nitro_moodle_plugins/archive/master.zip 
+3. Unpack ZIP file
+4. On web hosting delete folder 'nitroreportpdf' in [moodle directory]/mod/quiz/report
+5. From unpacked ZIP file, from 'nitro_moodle_plugins-master/mod/quiz/report' upload folder 'nitroreportpdf' to server to [moodle directory]/mod/quiz/report/
+6. Change permissions recursively for 'nitroreportpdf' folder to 0755
+7. Change permissions recursively for 'nitroreportpdf/cache' to 0777
+8. Run in browser WWW your Moodle website and complete installation
+
+
+LICENSE
+=============
 GPL 3 or later
 
 NO WARRANTY
@@ -24,6 +39,7 @@ IN NO EVENT THE AUTHOR WILL NOT BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY GENE
 
 AUTHOR PROHIBITS THE SALE OF THIS SOFTWARE.
 
-					SUPPORT
-=============================================
-If you notice errors, please create a new issue on https://bitbucket.org/j_maciejewski/nitro_moodle_plugins
+
+SUPPORT
+=============
+If you notice errors, please create a new issue on GitHub.

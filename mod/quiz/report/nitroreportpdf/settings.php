@@ -1,6 +1,8 @@
 <?php
 defined('MOODLE_INTERNAL') || die;
 global $OUTPUT, $CFG, $DB, $PAGE;
+//$PAGE->requires->css(new moodle_url($CFG->wwwroot . //"/mod/quiz/report/nitroreportpdf/css.css"));
+
 $quiz_nitroreportpdf_latex_db_options_type = array('latex2image','mathml2image','latex2mathml','mathml2latex');
 $quiz_nitroreportpdf_latex_db_options_typesender = array('HTTP-GET','HTTP-POST');
 $quiz_nitroreportpdf_latex_db_options_format = array('JPG','GIF','PNG','JSON-TEXT','TEXT');
@@ -16,6 +18,38 @@ $settings->add ( new admin_setting_heading ( 'main_settings', get_string('main_s
 
 $settings->add(new admin_setting_configselect('quiz_nitroreportpdf/declaration',get_string('declaration_page','quiz_nitroreportpdf'),get_string('declaration_desc','quiz_nitroreportpdf'), 'DECLARATION_NOTMUSTBE', $options_declaration));
 $settings->add(new admin_setting_confightmleditor('quiz_nitroreportpdf/contact',get_string('contact','quiz_nitroreportpdf'),get_string('contact_desc','quiz_nitroreportpdf'),''));
+
+/////////////////////////// CHECK UPDATES ///////////////////////////
+$check_updates_str=get_string('nochecked','quiz_nitroreportpdf');
+if($_GET['action']=='checkupdate'):
+	try
+	{
+		$ch = curl_init();
+		curl_setopt($ch,CURLOPT_URL,'https://raw.githubusercontent.com/nitro2010/nitro_moodle_plugins/master/mod/quiz/report/nitroreportpdf/version.php');
+		curl_setopt($ch,CURLOPT_AUTOREFERER,true);
+		curl_setopt($ch,CURLOPT_FOLLOWLOCATION,true); 
+		curl_setopt($ch,CURLOPT_RETURNTRANSFER,true); 
+		curl_setopt($ch,CURLOPT_SSL_VERIFYPEER,false); 
+		curl_setopt($ch,CURLOPT_CONNECTTIMEOUT,10);  
+		curl_setopt($ch,CURLOPT_MAXREDIRS,10); 
+		curl_setopt($ch,CURLOPT_TIMEOUT,120);  
+		$req=curl_exec($ch);
+		curl_close($ch);
+		$req=preg_replace('/ /','',$req);
+		preg_match_all('/\$plugin->version\=(.*)\;/',$req,$a);
+		if(get_config('quiz_nitroreportpdf','version') != $a[1][0]):
+			$check_updates_str=get_string('isnewversion','quiz_nitroreportpdf');
+		else:
+			$check_updates_str=get_string('youhavelastver','quiz_nitroreportpdf');	
+		endif;
+	}
+	catch(Exception $e2)
+	{
+		$check_updates_str=$e2->getMessage();
+	}
+endif;
+$str='<p style="text-align:center;">'.$check_updates_str.'</p><div style="text-align:center;"><input type="button" name="updatecheck" value="'.get_string('checkupdate','quiz_nitroreportpdf').'" onclick="location.replace(\''.$CFG->wwwroot.'/admin/settings.php?section=modsettingsquizcatnitroreportpdf&action=checkupdate\');"></div>';
+$settings->add ( new admin_setting_heading ( 'check_updates', get_string('checkupdates','quiz_nitroreportpdf'), $str ) );
 
 /////////////////////////// LATEX SETTINGS ///////////////////////////
 if(!empty($_POST['url'])):

@@ -455,6 +455,7 @@ return array(
     'TTFontFile_Analysis' => $vendorDir . '/mpdf/mpdf/classes/ttfontsuni_analysis.php',
     'Text_Template' => $vendorDir . '/phpunit/php-text-template/src/Template.php',
     'UCDN' => $vendorDir . '/mpdf/mpdf/classes/ucdn.php',
+    'Zend\\I18n\\Translator\\Resources' => $vendorDir . '/zendframework/zend-i18n-resources/src/Resources.php',
     'bmp' => $vendorDir . '/mpdf/mpdf/classes/bmp.php',
     'cssmgr' => $vendorDir . '/mpdf/mpdf/classes/cssmgr.php',
     'directw' => $vendorDir . '/mpdf/mpdf/classes/directw.php',

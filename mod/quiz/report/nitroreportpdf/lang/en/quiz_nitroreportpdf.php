@@ -142,21 +142,21 @@ $string['field_extraoptions'] = 'Extra options';
 $string['desc_extraoptions'] = 'enter extra options. Key word #magic# replace latex, mathml code';
 $string['field_type'] = 'Type';
 $string['desc_type'] = 'select type of conversion:<br>
-- <b>latex2image</b> - replaces syntax laTeX to image</span><br>
-- <b>mathml2image</b> - replaces syntax MathML to image</span><br>
-- <b>latex2mathml</b> - replaces syntax laTeX to MathML</span><br>
-- <b>mathml2latex</b> - replaces syntax MathML to laTeX</span><br>';
+<span class="nitroreportpdf_span_settings_20">- <b>latex2image</b> - replaces syntax laTeX to image</span><br>
+<span class="nitroreportpdf_span_settings_20">- <b>mathml2image</b> - replaces syntax MathML to image</span><br>
+<span class="nitroreportpdf_span_settings_20">- <b>latex2mathml</b> - replaces syntax laTeX to MathML</span><br>
+<span class="nitroreportpdf_span_settings_20">- <b>mathml2latex</b> - replaces syntax MathML to laTeX</span><br>';
 $string['field_typesender'] = 'Type sending';
 $string['desc_typesender'] = 'choose typ sending:<br>
-- <b>HTTP-GET</b> - sending using GET via HTTP</span><br>
-- <b>HTTP-POST</b> - sending using POST via HTTP</span><br>';
+<span class="nitroreportpdf_span_settings_20">- <b>HTTP-GET</b> - sending using GET via HTTP</span><br>
+<span class="nitroreportpdf_span_settings_20">- <b>HTTP-POST</b> - sending using POST via HTTP</span><br>';
 $string['field_format'] = 'Format';
 $string['desc_format'] = 'choose type of format:<br>
-- <b>JPG</b> - fed back response is in the JPG format</span><br>
-- <b>GIF</b> - fed back response is in the GIF format<br>
-- <b>PNG</b> - fed back response is in the PNG format</span><br>
-- <b>JSON-TEXT</b> - fed back response is in the JSON format</span><br>
-- <b>TEXT</b> - fed back response is in the text format</span><br>';
+<span class="nitroreportpdf_span_settings_20">- <b>JPG</b> - fed back response is in the JPG format</span><br>
+<span class="nitroreportpdf_span_settings_20">- <b>GIF</b> - fed back response is in the GIF format<br>
+<span class="nitroreportpdf_span_settings_20">- <b>PNG</b> - fed back response is in the PNG format</span><br>
+<span class="nitroreportpdf_span_settings_20">- <b>JSON-TEXT</b> - fed back response is in the JSON format</span><br>
+<span class="nitroreportpdf_span_settings_20">- <b>TEXT</b> - fed back response is in the text format</span><br>';
 $string['field_path'] = 'Path';
 $string['desc_path'] = 'enter path in XPATH format (first char is dot ".") to place find needed information';
 $string['main_settings'] = 'Main settings';
@@ -164,3 +164,9 @@ $string['actions'] = 'Actions';
 $string['delete'] = 'Delete';
 $string['addnewserver'] = 'Add new server';
 $string['e_nopermission'] = 'No permissions to folder cache. Please contact with administrator';
+$string['latex_settings'] = 'LaTEX Settings';
+$string['nochecked'] = 'No checked';
+$string['isnewversion'] = 'Is new version! Upgrade!';
+$string['youhavelastver'] = 'You have lastest version';
+$string['checkupdate'] = 'Check update';
+$string['checkupdates'] = 'Check updates';

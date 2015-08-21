@@ -12,6 +12,10 @@
     "require": {
         "phpoffice/phpexcel": "1.8.0",
         "peekmo/jsonpath": "dev-master",
-        "mpdf/mpdf": "dev-master"
+        "mpdf/mpdf": "dev-master",
+        "phpseclib/phpseclib": "^0.3.10",
+        "lcobucci/jwt": "^3.0",
+        "nitro2010/json-rpc": "^2.0",
+        "zendframework/zendframework": "^2.5"
     }
 }

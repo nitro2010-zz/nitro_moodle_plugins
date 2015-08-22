@@ -3,8 +3,8 @@ $tasks = array(
     array(                                    
         'classname' => 'quiz_nitroreportpdf\task\mathmlatex',
 		'blocking' => 0,                                 
-        'minute' => '*',                
-        'hour' => '*/1',                   
+        'minute' => '*/10',                
+        'hour' => '*',                   
         'day' => '*',                     
         'dayofweek' => '*',           
         'month' => '*'                  

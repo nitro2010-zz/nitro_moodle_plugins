@@ -20,14 +20,16 @@ class mathmlatex extends \core\task\scheduled_task {
 					$DB->execute('UPDATE {quiz_nitroreportpdf_latex_db} SET download="'.$ischecked['download'].'",upload="'.$ischecked['upload'].'" WHERE id="'.$download->id.'"');
 				endforeach;
 				$download2 = $DB->get_records_sql('SELECT id FROM {quiz_nitroreportpdf_latex_db} WHERE type="'.$arr[$i].'" ORDER BY download DESC,upload DESC');	
+				$di=1;
 				foreach($download2 AS $download2):		
 					$DB->execute('UPDATE {quiz_nitroreportpdf_latex_db} SET ratio="'.$di.'" WHERE id="'.$download2->id.'"');
 				endforeach;
+				$di++;
 			endif;	
-		endfor;	
+		endfor;
     }   
 
-	private function quiz_nitroreportpdf_check_host($host = null)
+	function quiz_nitroreportpdf_check_host($host = null)
 	{
 		if((empty($host))||($host == null)):
 		return array('download'=>0,'upload'=>0);

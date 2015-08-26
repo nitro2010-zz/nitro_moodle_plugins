@@ -11,13 +11,16 @@ class mathmlatex extends \core\task\scheduled_task {
 	{
 		global $CFG,$DB;
 		$arr=array('latex2image','mathml2image','latex2mathml','mathml2latex');
+		$server_num=1;
 		for($i=0;$i<count($arr);$i++):
 			$download_count = $DB->count_records_sql('SELECT count(*) FROM {quiz_nitroreportpdf_latex_db} WHERE type="'.$arr[$i].'"');		
 			if($download_count > 0):		
 				$download = $DB->get_records_sql('SELECT * FROM {quiz_nitroreportpdf_latex_db} WHERE type="'.$arr[$i].'"');
 				foreach($download AS $download):		
+					echo "... Checking server #".$server_num." ".$download->url." \r\n";
 					$ischecked=$this->quiz_nitroreportpdf_check_host($download);
 					$DB->execute('UPDATE {quiz_nitroreportpdf_latex_db} SET download="'.$ischecked['download'].'",upload="'.$ischecked['upload'].'" WHERE id="'.$download->id.'"');
+					$server_num++;
 				endforeach;
 				$download2 = $DB->get_records_sql('SELECT id FROM {quiz_nitroreportpdf_latex_db} WHERE type="'.$arr[$i].'" ORDER BY download DESC,upload DESC');	
 				$di=1;

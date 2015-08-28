@@ -4399,31 +4399,5 @@ endif;
 			return "@500";
 		endif;
 	}	
-
-	function generate_password($len = 20, $num = false, $bigletters = false, $smallletters = false)
-	{
-		$chars=array();	
-		if($num):
-			for($i=0;$i<=9;$i++):					
-				$chars[]=$i;			
-			endfor;				
-		endif;	
-		if($bigletters):	
-			for($i=65;$i<=90;$i++):					
-				$chars[]=chr($i);			
-			endfor;	
-		endif;
-		if($smallletters):	
-			for($i=97;$i<=122;$i++):					
-				$chars[]=chr($i);			
-			endfor;						
-		endif;	
-		$pass='';
-		for($i=0;$i<$len;$i++):
-			$pass.=$chars[array_rand($chars)];
-		endfor;	
-		return $pass;
-	}				
-	
 /////
 }

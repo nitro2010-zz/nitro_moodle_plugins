@@ -3,6 +3,8 @@ INFO
 NitroReportPDF is module for Moodle, which allows on generate PDF file, also XLS, XLSX and ZIP files with the data about conducted the quiz.
 Author: Jarosław Maciejewski <nitro.bystrzyca@gmail.com>
 
+TESTING VERSION FOR PHP 7
+
 
 INSTALLATION
 =============
